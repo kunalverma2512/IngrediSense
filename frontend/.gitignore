@@ -1,0 +1,137 @@
+# ====================================
+# Frontend .gitignore - React + Vite
+# ====================================
+
+# ==================== Dependencies ====================
+node_modules/
+.pnp
+.pnp.js
+
+# ==================== Build Output ====================
+dist/
+dist-ssr/
+build/
+*.local
+
+# ==================== Environment Variables ====================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# ==================== Vite ====================
+.vite/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# ==================== Testing ====================
+coverage/
+.nyc_output/
+*.lcov
+
+# Test results
+test-results/
+playwright-report/
+playwright/.cache/
+
+# ==================== Logs ====================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==================== Editor & IDE ====================
+# VSCode
+.vscode/
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains
+.idea/
+*.iml
+
+# Sublime
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# ==================== macOS ====================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# ==================== Windows ====================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE_BIN/
+
+# ==================== Linux ====================
+*~
+.directory
+.Trash-*
+
+# ==================== Package Managers ====================
+# Yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# npm
+package-lock.json.backup
+npm-debug.log*
+
+# pnpm
+pnpm-lock.yaml.backup
+
+# ==================== Misc ====================
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+# Debug
+.vscode-test
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
