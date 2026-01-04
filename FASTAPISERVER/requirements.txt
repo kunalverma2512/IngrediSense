@@ -15,9 +15,11 @@ langgraph==0.2.64
 # Google Generative AI
 google-generativeai==0.8.3
 
+# Groq for Llama 3.2-11B Vision (FREE & FAST!)
+groq==0.13.0
+
 # Image processing
 opencv-python==4.10.0.84
-pytesseract==0.3.13
 Pillow==11.0.0
 
 # Web scraping

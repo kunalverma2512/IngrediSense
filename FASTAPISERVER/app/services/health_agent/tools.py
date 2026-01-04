@@ -1,18 +1,15 @@
 import os
 import cv2
 import json
+import base64
 import requests
-import pytesseract
 from bs4 import BeautifulSoup
 from typing import List
 from pydantic import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
+from groq import Groq
 from app.config.settings import settings
 from app.utils.logger import logger
-
-# Set Tesseract path if provided in settings, otherwise rely on auto-detection (macOS)
-if settings.tesseract_cmd:
-    pytesseract.pytesseract.tesseract_cmd = settings.tesseract_cmd
 
 
 class LabelExtraction(BaseModel):
@@ -47,30 +44,103 @@ class ProHealthTools:
         self.llm = llm  # Store base LLM for batch analysis
         self.label_llm = llm.with_structured_output(LabelExtraction)
         self.profile_llm = llm.with_structured_output(IngredientProfile)
+        # Initialize Groq client for vision (FREE & FAST!)
+        self.groq_client = Groq(api_key=settings.groq_api_key)
 
     def extract_label_data(self, image_path: str) -> LabelExtraction:
-        """Extract brand and ingredients from food label image using OCR"""
+        """Extract brand and ingredients from food label image using Groq Llama 3.2-90B Vision"""
         try:
-            image = cv2.imread(image_path)
-            if image is None:
-                logger.error(f"Could not read image: {image_path}")
-                return LabelExtraction(brand="Unknown", ingredients=[])
+            # Read and encode image to base64
+            with open(image_path, "rb") as image_file:
+                image_data = base64.b64encode(image_file.read()).decode('utf-8')
             
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            raw_text = pytesseract.image_to_string(gray)
+            logger.info(f"Processing image with Groq Llama 4 Scout Vision: {image_path}")
             
-            logger.info(f"OCR extracted text from {image_path}")
+            # Create vision prompt for Llama 4 Scout (current working model)
+            response = self.groq_client.chat.completions.create(
+                model="meta-llama/llama-4-scout-17b-16e-instruct",  # Current Groq vision model
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": """You are an expert at reading food product labels. Analyze this image and extract:
+1. Brand name (the main product brand/manufacturer)
+2. Complete ingredient list (in order as listed on the package)
+
+Extract ONLY the ingredients from the "Ingredients:" section. Ignore nutritional facts, allergen warnings, addresses, and marketing text.
+
+Return the data in this exact JSON format:
+{
+  "brand": "Brand Name Here",
+  "ingredients": ["ingredient1", "ingredient2", "ingredient3", ...]
+}"""
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{image_data}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                temperature=0.1,
+                max_tokens=2000
+            )
             
-            prompt = f"""
-            You are a high-precision OCR and label parser.
-            TEXT:
-            {raw_text}
-            Identify the product brand and extract only the ingredient list.
-            """
-            return self.label_llm.invoke(prompt)
+            # Debug: Log the full response
+            logger.info(f"Groq API Response Object: {response}")
+            
+            extracted_text = response.choices[0].message.content.strip()
+            logger.info(f"Groq Vision raw response text: {extracted_text}")
+            
+            # Parse the JSON response
+            if extracted_text.startswith("```"):
+                # Remove markdown code blocks
+                logger.info("Detected markdown code block, removing...")
+                extracted_text = extracted_text.split("```")[1]
+                if extracted_text.startswith("json"):
+                    extracted_text = extracted_text[4:]
+                extracted_text = extracted_text.strip()
+                logger.info(f"After removing markdown: {extracted_text}")
+            
+            # Try to parse JSON directly
+            try:
+                logger.info("Attempting to parse JSON response...")
+                data = json.loads(extracted_text)
+                logger.info(f"Successfully parsed JSON: {data}")
+                
+                brand = data.get("brand", "Unknown")
+                ingredients = data.get("ingredients", [])
+                
+                logger.info(f"Extracted - Brand: {brand}, Ingredients count: {len(ingredients)}")
+                
+                return LabelExtraction(
+                    brand=brand,
+                    ingredients=ingredients
+                )
+            except json.JSONDecodeError as json_err:
+                # Fallback: use structured output to parse the text
+                logger.warning(f"JSON parsing failed: {json_err}")
+                logger.warning(f"Failed text was: {extracted_text}")
+                logger.info("Using Gemini structured output as fallback...")
+                
+                parse_prompt = f"""
+                Extract brand and ingredients from this text:
+                {extracted_text}
+                """
+                result = self.label_llm.invoke(parse_prompt)
+                logger.info(f"Fallback extraction result: Brand={result.brand}, Ingredients={len(result.ingredients)}")
+                return result
             
         except Exception as e:
-            logger.error(f"Error extracting label data: {e}")
+            logger.error(f"Error extracting label data with Groq Llama Vision: {e}")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error details: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return LabelExtraction(brand="Unknown", ingredients=[])
 
     def fetch_clinical_evidence(self, ingredient: str) -> IngredientProfile:

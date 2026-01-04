@@ -22,8 +22,8 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.5-flash"
     gemini_temperature: float = 0.1
     
-    # Tesseract Configuration (optional, auto-detected on macOS)
-    tesseract_cmd: Optional[str] = None
+    # Groq Configuration (for Llama 3.2-11B Vision - FREE!)
+    groq_api_key: str
     
     # CORS Configuration
     cors_origins: list = [
