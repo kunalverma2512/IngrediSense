@@ -446,8 +446,8 @@ Use the provided scientific context from Wikipedia and OpenFoodFacts, plus your 
             is_vegetarian = is_vegan or "vegetarian" in user_health.lower()
             has_gluten_allergy = "gluten" in user_health.lower()
             
-            # Search OpenFoodFacts for better alternatives in same category
-            search_url = f"https://world.openfoodfacts.org/category/{category}.json"
+            # Search OpenFoodFacts INDIA for better alternatives in same category
+            search_url = f"https://in.openfoodfacts.org/category/{category}.json"
             params = {
                 "page_size": 50,  # Get more to filter
                 "json": 1,
@@ -548,21 +548,27 @@ Use the provided scientific context from Wikipedia and OpenFoodFacts, plus your 
             return self._get_fallback_alternatives(category or "snacks")
     
     def _get_fallback_alternatives(self, category: str) -> List[str]:
-        """Fallback alternatives if OpenFoodFacts fails"""
+        """Fallback Indian alternatives if OpenFoodFacts fails"""
         fallback_map = {
             "snacks": [
-                "Hippeas Organic Chickpea Puffs (Why it's better: Nutriscore B, baked not fried, higher protein, available at Target/Whole Foods)",
-                "Siete Grain Free Tortilla Chips (Why it's better: made with avocado oil, no refined grains, available at Whole Foods/Sprouts)",
-                "Rhythm Superfoods Kale Chips (Why it's better: Nutriscore A, air-crisped vegetables, high fiber, available at Whole Foods)"
+                "Too Yumm Multigrain Chips (Why it's better: baked not fried, 50% less fat, no trans fat, available at BigBasket/Amazon India)",
+                "Slurrp Farm Millet Puffs (Why it's better: made with millets, high fiber, no maida, available at BigBasket/Flipkart)",
+                "Yoga Bar Baked Chips (Why it's better: protein-rich, whole grains, no preservatives, available at BigBasket/Amazon India)"
             ],
             "cookies": [
-                "Simple Mills Almond Flour Crackers (Why it's better: Nutriscore B, grain-free, lower sugar, available at Target/Whole Foods)",
-                "Hu Kitchen Dark Chocolate (Why it's better: organic, no refined sugar, available at Whole Foods)",
+                "Slurrp Farm Millet Cookies (Why it's better: made with ragi & oats, no maida, low sugar, available at BigBasket/Flipkart)",
+                "Yoga Bar Breakfast Cookies (Why it's better: protein-rich, whole grains, no refined sugar, available at BigBasket)",
+                "Timios Millet Cookies (Why it's better: organic millets, jaggery sweetened, available at FirstCry/Amazon India)"
             ],
             "chips": [
-                  "Hippeas Chickpea Puffs (Why it's better: 4g protein, baked not fried, available at Target)",
-                "Terra Veggie Chips (Why it's better: real vegetables, less sodium, available at Whole Foods)",
-                "Simply 7 Quinoa Chips (Why it's better: whole grains, no artificial ingredients, available at Target)"
+                "Too Yumm Veggie Stix (Why it's better: real vegetables, 70% less oil, baked, available at BigBasket/Swiggy Instamart)",
+                "Cornitos Baked Nacho Crisps (Why it's better: baked corn, lower fat, available at Amazon India/DMart)",
+                "Happilo Premium Roasted Makhana (Why it's better: naturally low fat, high protein, Ayurvedic superfood, available at BigBasket)"
+            ],
+            "noodles": [
+                "Maggi Atta Noodles (Why it's better: whole wheat, higher fiber than maida noodles, available at BigBasket/Kirana stores)",
+                "YiPPee Multi Grain Noodles (Why it's better: 4 grains with oats, no trans fat, available at BigBasket)",
+                "Patanjali Atta Noodles (Why it's better: whole wheat, no maida, available at Patanjali stores)"
             ]
         }
         
