@@ -1,6 +1,7 @@
 from .state import HealthCoPilotState
 from .tools import ProHealthTools
 from langchain_google_genai import ChatGoogleGenerativeAI
+from app.utils.logger import logger
 
 class AgentNodes:
     def __init__(self, llm: ChatGoogleGenerativeAI):
@@ -9,7 +10,12 @@ class AgentNodes:
 
     def extractor_node(self, state: HealthCoPilotState):
         data = self.tools.extract_label_data(state["image_path"])
-        return {"brand_name": data.brand, "ingredients_list": data.ingredients}
+        nutrition_dict = data.nutrition.dict() if data.nutrition else None
+        return {
+            "brand_name": data.brand,
+            "ingredients_list": data.ingredients,
+            "nutrition_facts": nutrition_dict
+        }
 
     def health_profiler_node(self, state: HealthCoPilotState):
         prompt = f"""
@@ -22,7 +28,7 @@ class AgentNodes:
 
     def researcher_node(self, state: HealthCoPilotState):
         # Batch analyze all ingredients in a single AI call (optimized!)
-        knowledge = self.tools.fetch_clinical_evidence_batch(state["ingredients_list"][:10])
+        knowledge = self.tools.fetch_clinical_evidence_batch(state["ingredients_list"])
         
         # Parse user profile for alternatives filtering
         # user_raw_health is a string like "Allergies: Peanuts, Gluten. Dietary preferences: Vegan"
@@ -65,20 +71,36 @@ class AgentNodes:
     def conversational_designer_node(self, state: HealthCoPilotState):
         # Extract key info for enriched, contextual response
         brand = state['brand_name']
-        ingredients = state['ingredients_list'][:5]  # Top 5 for context
+        ingredients = state['ingredients_list']  # All ingredients for full context
         risks = state['clinical_risk_analysis']
         alts = state['product_alternatives']
         profile = state['user_clinical_profile']
-        ingredient_kb = state['ingredient_knowledge_base'][:3]  # Top 3 for ingredient education
+        ingredient_kb = state['ingredient_knowledge_base']  # All ingredient analysis
+        nutrition = state.get('nutrition_facts')  # CRITICAL: Actual nutrition data from OCR
+        
+        # Format nutrition data for prompt
+        nutrition_info = "NOT AVAILABLE ON LABEL"
+        if nutrition:
+            nutrition_info = f"""AVAILABLE (use these EXACT values):
+- Serving Size: {nutrition.get('serving_size', 'Unknown')}
+- Calories: {nutrition.get('calories', 0)} per serving
+- Total Fat: {nutrition.get('total_fat_g', 0)}g
+- Saturated Fat: {nutrition.get('saturated_fat_g', 0)}g  
+- Sodium: {nutrition.get('sodium_mg', 0)}mg
+- Carbohydrates: {nutrition.get('carbohydrates_g', 0)}g
+- Fiber: {nutrition.get('fiber_g', 0)}g
+- Sugars: {nutrition.get('sugars_g', 0)}g
+- Protein: {nutrition.get('protein_g', 0)}g"""
         
         prompt = f"""**STRICT OUTPUT FORMAT – NO EXCEPTIONS:**
-You MUST include ALL 6 components below. Competition judging focuses on co-pilot behavior, not technical knowledge.
+You MUST include ALL 6 components below. Competition judging focuses on co-pilot behavior and HONEST UNCERTAINTY.
 
 You are an AI health co-pilot for a 21-year-old user (72kg, 176cm, BMI 23.2, ~2000 cal/day needs).
 
 CONTEXT:
 Product: {brand}
 Key Ingredients: {', '.join(ingredients)}
+NUTRITION FACTS: {nutrition_info}
 User Health Profile: {profile}
 Risk Analysis: {risks[:500]}
 Ingredient Details: {ingredient_kb}
@@ -90,6 +112,24 @@ Available Alternatives: {alts}
 
 **TALK LIKE A HELPFUL FRIEND, NOT A SCIENTIST.**
 
+**CRITICAL: NO SPECULATION WITHOUT EVIDENCE**
+❌ NEVER say: "Some spices can be mixed with harmful things" (speculative without proof)
+✅ ONLY mention confirmed ingredients from the label
+✅ Put uncertain connections in "What I'm Unsure About" section
+✅ If making claims, qualify: "Some studies suggest..." or "In certain cases..."
+
+**CRITICAL: USE THESE EXACT SECTION HEADERS - NO VARIATIONS!**
+You MUST include these 6 sections with EXACT header names:
+1. 🤔 Scanning your {{brand}}...
+2. **Quick Decision:** [content]
+3. **Why This Matters To You:**
+4. **Tradeoffs:** [content]
+5. **What I'm Unsure About:**
+6. **Better Options:**
+
+DO NOT use variations like "Carbohydrates and Fiber Labeling" or "Ground Spices Blend" as top-level headers!
+These should be INSIDE the "What I'm Unsure About:" section.
+
 MANDATORY OUTPUT STRUCTURE:
 
 🤔 Scanning your {{brand}}...
@@ -97,20 +137,27 @@ MANDATORY OUTPUT STRUCTURE:
 **Quick Decision:** [One clear sentence: Safe/Not ideal/Skip + specific action in plain English]
 
 **Why This Matters To You:**
-- **[Condition 1]**: [QUANTIFY with exact % of daily needs. Example: "264 calories = 13% of your ~2000 daily needs as a 21-year-old male"]
+- **[Condition 1]**: [QUANTIFY with exact % of daily needs. Use ACTUAL nutrition data if available. Example: "This 264-calorie serving (per 50g) is 13% of your ~2000 daily needs" - NOT "Let's estimate 264 calories"]
 - **[Condition 2]**: [Explain WHAT ingredient IS in simple terms + regulatory fact. Example: "White sesame (FDA-required allergen label since 2023) can trigger severe allergic reactions"]
 - **[Condition 3]**: [Use SIMPLE mechanism. Example: "Refined flour spikes blood sugar, which can worsen inflammation" NOT "histamine pathways"]
 
-**Tradeoffs**: [One sentence: benefit vs risk + age context in plain language]
+**Tradeoffs:** [One sentence: benefit vs risk + age context in plain language. Example: "Tasty quick snack, but high saturated fat could be better spent on whole foods for your TB recovery"]
 
-**What I'm Unsure About**: [One specific uncertainty with simple explanation. Example: "Ground Spices purity varies - some turmeric can interact with TB meds, but this label doesn't specify which spices"]
+**What I'm Unsure About:**
+List 2-3 specific uncertainties with honest explanations:
+- **[Missing Label Info]**: [What's not on the label + why it matters. Example: "Ground Spices Blend: Label doesn't list which spices - can't confirm if turmeric is present, which can interact with some TB medications"]
+- **[Processing Details]**: [Unspecified processing methods + impact. Example: "Palm Oil Processing: Label doesn't specify refined vs unrefined, making it hard to quantify exact byproduct levels"]
+- **[Conflicting Evidence]**: [If research is mixed. Example: "Research is mixed on whether X affects Y in people under 25"]
 
-**Better Options**: [SPECIFIC product brands with availability. Example: "🛒 Try Hippeas Chickpea Puffs (available at Target/Whole Foods) or Terra Veggie Chips (lower allergen risk)"]
+**Better Options:** 🛒 [SPECIFIC product brands with store names]
+- [Brand Name] (Why it's better: specific reason, available at: Target/Whole Foods)
+- [Brand Name] (Why it's better: specific reason, available at: Target/Whole Foods)
 
 CRITICAL REQUIREMENTS:
 
 1. **Nutrition Quantification** (EXACT math):
    - Daily calorie needs: ~2000 for 21-year-old male, 72kg
+   - If you have ACTUAL calorie data, say "This 264-calorie serving" NOT "Let's estimate 264 calories"
    - Calculate exact percentages: "X calories = Y% of daily needs"
    - Relate to specific conditions: "TB patients often need lower sodium than the 192mg here"
 
@@ -119,38 +166,69 @@ CRITICAL REQUIREMENTS:
    - Use analogies: "immune system going into overdrive" NOT "cytokine release"
    - Test: Would a non-scientist friend understand this?
 
-3. **Actionable Alternatives**:
+3. **Honest Uncertainty** (CRITICAL - 30% of score):
+   - MUST include "What I'm Unsure About" section
+   - Be specific about what's missing from the label
+   - Explain why the uncertainty matters
+   - Don't speculate - admit when you don't know
+
+4. **Actionable Alternatives**:
    - SPECIFIC brand names (Hippeas, Terra, Simple Mills, etc.)
    - Include WHERE to buy ("available at Target", "online delivery")
    - DON'T just say "roasted chickpeas" - say "Hippeas Chickpea Puffs"
 
-4. **Age/BMI Personalization**:
+5. **Age/BMI Personalization**:
    - Use exact stats: "As a 21-year-old with healthy BMI 23.2..."
    - Age-specific recovery: "Your body can handle mild inflammation better at 21, but TB needs extra care"
 
-5. **Regulatory Education** (simplified):
-   - "FDA made sesame a required allergen label in 2023"
-   - NOT "FDA top-9 allergen" - explain WHY it matters
+6. **Evidence-Based Only**:
+   - Only mention confirmed ingredients from the label
+   - If ingredient is vague (like "Ground Spices"), put concerns in "What I'm Unsure About"
+   - Don't make claims about ingredients that might not be present
 
-6. **Co-Pilot Feel**:
+7. **Co-Pilot Feel**:
    - Do the work FOR the user (give brands, not suggestions to research)
    - Be proactive ("Here are 2 options I found for you")
    - Friendly emoji use: 🛒 for shopping, ⚠️ for warnings
 
 GOOD EXAMPLES:
-- "264 calories = 13% of your ~2000 daily needs - adds up if you snack regularly"
+- "This 264-calorie serving (per 50g) is 13% of your ~2000 daily needs - adds up if you snack regularly"
 - "White sesame can trigger severe allergic reactions (FDA requires labeling since 2023)"
 - "Refined flour spikes blood sugar, which can worsen sinus swelling"
 - "🛒 Try Hippeas Chickpea Puffs (Target, $4) or Terra Veggie Chips (lower fat)"
 - "At 21, your immune system bounces back quickly, but TB means being extra careful"
 
 BAD EXAMPLES (avoid):
+- "Let's estimate 264 calories" (if you have actual data!)
+- "Some spices can be mixed with lead" (speculative without proof)
 - "Triggers mast cell degranulation" (too technical)
 - "Try roasted chickpeas" (not specific enough)
-- "High calorie content" (not quantified)
-- "Mycobacterium tuberculosis antigens" (scientific jargon)
+- Missing "What I'm Unsure About" section (automatic point deduction!)
 
-Generate NOW. Sound like a smart, helpful friend - NOT a research paper."""
+Generate NOW. Sound like a smart, helpful friend who ADMITS when they don't know something - NOT a research paper.
+
+REMINDER: You MUST include ALL 6 sections with these EXACT headers:
+1. Scanning message with 🤔
+2. **Quick Decision:**
+3. **Why This Matters To You:**
+4. **Tradeoffs:**
+5. **What I'm Unsure About:**
+6. **Better Options:**"""
         
         res = self.llm.invoke(prompt)
-        return {"final_conversational_insight": res.content}
+        
+        # DEBUG LOGGING - Check if all sections are present
+        response_text = res.content
+        logger.info("="*80)
+        logger.info("GEMINI RESPONSE - FULL TEXT:")
+        logger.info(response_text)
+        logger.info("="*80)
+        logger.info("SECTION HEADER CHECK:")
+        logger.info(f"  Has 'Quick Decision': {'**Quick Decision' in response_text or 'Quick Decision' in response_text}")
+        logger.info(f"  Has 'Why This Matters': {'Why This Matters' in response_text}")
+        logger.info(f"  Has 'Tradeoffs': {'**Tradeoffs' in response_text or 'Tradeoffs' in response_text}")
+        logger.info(f"  Has 'Unsure About': {'Unsure About' in response_text}")
+        logger.info(f"  Has 'Better Options': {'Better Options' in response_text}")
+        logger.info("="*80)
+        
+        return {"final_conversational_insight": response_text}

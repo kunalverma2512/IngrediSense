@@ -23,6 +23,7 @@ const HealthAnalysisDisplay = ({ insight }) => {
             // Detect scanning message (flexible patterns)
             if (trimmedLine.includes('Scanning') || trimmedLine.includes('🤔')) {
                 sections.scanning = trimmedLine.replace(/^🤔\s*/, '');
+                currentSection = '';  // Reset section
             }
             // Detect Quick Decision (with or without asterisks)
             else if (trimmedLine.match(/\*?\*?Quick Decision:?\*?\*?/i)) {
@@ -37,24 +38,7 @@ const HealthAnalysisDisplay = ({ insight }) => {
             else if (trimmedLine.match(/\*?\*?Why This Matters/i)) {
                 currentSection = 'whyMatters';
             }
-            // Detect bullet points for Why This Matters (more flexible)
-            else if (currentSection === 'whyMatters' && (trimmedLine.match(/^[-*]\s+\*?\*?([^*:]+)\*?\*?:/) || trimmedLine.match(/^\*\s+\*\*([^*]+)\*\*:/))) {
-                const match = trimmedLine.match(/^[-*]\s+\*?\*?([^*:]+)\*?\*?:\s*(.*)/) || trimmedLine.match(/^\*\s+\*\*([^*]+)\*\*:\s*(.*)/);
-                if (match) {
-                    sections.whyMatters.push({
-                        title: match[1].trim(),
-                        content: [match[2].trim()]
-                    });
-                }
-            }
-            // Continue Why Matters subsection content
-            else if (currentSection === 'whyMatters' && trimmedLine && !trimmedLine.match(/\*\*[A-Z]/) && sections.whyMatters.length > 0) {
-                const lastItem = sections.whyMatters[sections.whyMatters.length - 1];
-                if (!trimmedLine.match(/^[-*]/)) {
-                    lastItem.content.push(trimmedLine);
-                }
-            }
-            // Detect Tradeoffs
+            // Detect Tradeoffs - THIS EXITS "Why This Matters"
             else if (trimmedLine.match(/\*?\*?Tradeoffs?:?\*?\*?/i)) {
                 currentSection = 'tradeoffs';
                 const contentMatch = trimmedLine.match(/\*?\*?Tradeoffs?:?\*?\*?\s*(.*)/i);
@@ -65,22 +49,57 @@ const HealthAnalysisDisplay = ({ insight }) => {
             else if (currentSection === 'tradeoffs' && trimmedLine && !trimmedLine.match(/\*\*[A-Z]/)) {
                 sections.tradeoffs += ' ' + trimmedLine;
             }
-            // Detect What I'm Unsure About
+            // Detect What I'm Unsure About - THIS EXITS "Tradeoffs"
             else if (trimmedLine.match(/What I'?m Unsure About/i) || trimmedLine.match(/What I'?m Not Sure About/i)) {
                 currentSection = 'unsure';
+            }
+            // Detect Better Options - THIS EXITS "Unsure"
+            else if (trimmedLine.match(/\*?\*?Better Options?:?\*?\*?/i) || trimmedLine.includes('🛒')) {
+                currentSection = 'betterOptions';
+            }
+            // NOW process content based on currentSection
+            // Detect bullet points for Why This Matters (more flexible)
+            else if (currentSection === 'whyMatters' && (trimmedLine.match(/^[-*]\s+\*?\*?([^*:]+)\*?\*?:/) || trimmedLine.match(/^\*\s+\*\*([^*]+)\*\*:/))) {
+                const match = trimmedLine.match(/^[-*]\s+\*?\*?([^*:]+)\*?\*?:\s*(.*)/) || trimmedLine.match(/^\*\s+\*\*([^*]+)\*\*:\s*(.*)/);
+                if (match) {
+                    sections.whyMatters.push({
+                        title: match[1].trim(),
+                        content: match[2].trim() ? [match[2].trim()] : []  // Start with first line if present
+                    });
+                }
+            }
+            // Continue Why Matters subsection content (improved)
+            else if (currentSection === 'whyMatters' && trimmedLine && sections.whyMatters.length > 0) {
+                // Don't add if it's a new section header
+                if (!trimmedLine.match(/\*\*[A-Z]/) && !trimmedLine.match(/^[-*]\s+\*?\*?([^*:]+)\*?\*?:/)) {
+                    const lastItem = sections.whyMatters[sections.whyMatters.length - 1];
+                    // Add all content lines, not just non-bullet-point lines
+                    if (trimmedLine && trimmedLine !== '' && !trimmedLine.startsWith('**')) {
+                        lastItem.content.push(trimmedLine);
+                    }
+                }
             }
             else if (currentSection === 'unsure' && (trimmedLine.match(/^[-*]\s+\*?\*?([^*:]+)\*?\*?:/) || trimmedLine.match(/^\*\s+\*\*([^*]+)\*\*:/))) {
                 const match = trimmedLine.match(/^[-*]\s+\*?\*?([^*:]+)\*?\*?:\s*(.*)/) || trimmedLine.match(/^\*\s+\*\*([^*]+)\*\*:\s*(.*)/);
                 if (match) {
                     sections.unsure.push({
                         title: match[1].trim(),
-                        content: match[2].trim()
+                        content: match[2].trim() ? [match[2].trim()] : []  // Support multi-line content
                     });
                 }
             }
-            // Better Options (flexible matching for multiple formats)
-            else if (trimmedLine.match(/\*?\*?Better Options?:?\*?\*?/i) || trimmedLine.includes('🛒')) {
-                currentSection = 'betterOptions';
+            // Continue unsure section content (multi-line support)
+            else if (currentSection === 'unsure' && trimmedLine && sections.unsure.length > 0) {
+                if (!trimmedLine.match(/\*\*[A-Z]/) && !trimmedLine.match(/^[-*]\s+\*?\*?([^*:]+)\*?\*?:/)) {
+                    const lastItem = sections.unsure[sections.unsure.length - 1];
+                    if (trimmedLine && trimmedLine !== '' && !trimmedLine.startsWith('**')) {
+                        if (Array.isArray(lastItem.content)) {
+                            lastItem.content.push(trimmedLine);
+                        } else {
+                            lastItem.content = [lastItem.content, trimmedLine];
+                        }
+                    }
+                }
             }
             else if (currentSection === 'betterOptions' && trimmedLine) {
                 // Gemini format: "Product Name (Why it's better: reason)"
@@ -219,7 +238,15 @@ const HealthAnalysisDisplay = ({ insight }) => {
                         {sections.unsure.map((item, index) => (
                             <div key={index} className="bg-purple-50 rounded-xl p-4">
                                 <h4 className="text-lg font-bold text-purple-900 mb-2">{item.title}</h4>
-                                <p className="text-base text-gray-700 leading-relaxed">{item.content}</p>
+                                {Array.isArray(item.content) ? (
+                                    <div className="space-y-2">
+                                        {item.content.map((paragraph, pIndex) => (
+                                            <p key={pIndex} className="text-base text-gray-700 leading-relaxed">{paragraph}</p>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-base text-gray-700 leading-relaxed">{item.content}</p>
+                                )}
                             </div>
                         ))}
                     </div>

@@ -4,12 +4,25 @@ import json
 import base64
 import requests
 from bs4 import BeautifulSoup
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
 from groq import Groq
 from app.config.settings import settings
 from app.utils.logger import logger
+
+
+class NutritionFacts(BaseModel):
+    """Nutrition facts from the label"""
+    serving_size: Optional[str] = Field(default=None, description="Serving size (e.g., '50g', '1 cup')")
+    calories: Optional[int] = Field(default=None, description="Calories per serving")
+    total_fat_g: Optional[float] = Field(default=None, description="Total fat in grams")
+    saturated_fat_g: Optional[float] = Field(default=None, description="Saturated fat in grams")
+    sodium_mg: Optional[int] = Field(default=None, description="Sodium in milligrams")
+    carbohydrates_g: Optional[float] = Field(default=None, description="Total carbohydrates in grams")
+    fiber_g: Optional[float] = Field(default=None, description="Dietary fiber in grams")
+    sugars_g: Optional[float] = Field(default=None, description="Sugars in grams")
+    protein_g: Optional[float] = Field(default=None, description="Protein in grams")
 
 
 class LabelExtraction(BaseModel):
@@ -18,6 +31,10 @@ class LabelExtraction(BaseModel):
     )
     ingredients: List[str] = Field(
         description="Ordered list of ingredients exactly as declared on the label, excluding quantities, addresses, claims, or marketing text"
+    )
+    nutrition: Optional[NutritionFacts] = Field(
+        default=None,
+        description="Nutrition facts from the nutrition table if visible on the label"
     )
 
 
@@ -48,7 +65,7 @@ class ProHealthTools:
         self.groq_client = Groq(api_key=settings.groq_api_key)
 
     def extract_label_data(self, image_path: str) -> LabelExtraction:
-        """Extract brand and ingredients from food label image using Groq Llama 3.2-90B Vision"""
+        """Extract brand, ingredients AND nutrition facts from food label using Groq Llama 4 Scout Vision"""
         try:
             # Read and encode image to base64
             with open(image_path, "rb") as image_file:
@@ -56,7 +73,7 @@ class ProHealthTools:
             
             logger.info(f"Processing image with Groq Llama 4 Scout Vision: {image_path}")
             
-            # Create vision prompt for Llama 4 Scout (current working model)
+            # Create vision prompt for Llama 4 Scout (UPDATED TO EXTRACT NUTRITION FACTS)
             response = self.groq_client.chat.completions.create(
                 model="meta-llama/llama-4-scout-17b-16e-instruct",  # Current Groq vision model
                 messages=[
@@ -65,17 +82,42 @@ class ProHealthTools:
                         "content": [
                             {
                                 "type": "text",
-                                "text": """You are an expert at reading food product labels. Analyze this image and extract:
-1. Brand name (the main product brand/manufacturer)
-2. Complete ingredient list (in order as listed on the package)
+                                "text": """Look at this food label image carefully and extract ALL information:
 
-Extract ONLY the ingredients from the "Ingredients:" section. Ignore nutritional facts, allergen warnings, addresses, and marketing text.
+1. Product name and brand
+2. **ALL nutrition facts from the Nutrition Facts table** (per serving):
+   - Serving size (e.g., "50g", "1 cup")
+   - Calories
+   - Total Fat (g)
+   - Saturated Fat (g)
+   - Sodium (mg)
+   - Total Carbohydrates (g)
+   - Dietary Fiber (g)
+   - Sugars (g)
+   - Protein (g)
+3. Complete ingredients list (in order)
 
-Return the data in this exact JSON format:
+Return as JSON in this EXACT format:
 {
-  "brand": "Brand Name Here",
-  "ingredients": ["ingredient1", "ingredient2", "ingredient3", ...]
-}"""
+  "brand": "Product Brand Name",
+  "ingredients": ["ingredient1", "ingredient2", ...],
+  "nutrition": {
+    "serving_size": "50g",
+    "calories": 264,
+    "total_fat_g": 16.0,
+    "saturated_fat_g": 5.0,
+    "sodium_mg": 192,
+    "carbohydrates_g": 25.0,
+    "fiber_g": 1.0,
+    "sugars_g": 8.0,
+    "protein_g": 5.0
+  }
+}
+
+IMPORTANT:
+- If you can SEE the nutrition table, extract ALL values
+- Only use null/0 if data is truly missing from the image
+- Extract actual numbers from the table, don't estimate"""
                             },
                             {
                                 "type": "image_url",
@@ -87,7 +129,7 @@ Return the data in this exact JSON format:
                     }
                 ],
                 temperature=0.1,
-                max_tokens=2000
+                max_tokens=2048
             )
             
             # Debug: Log the full response
@@ -96,15 +138,20 @@ Return the data in this exact JSON format:
             extracted_text = response.choices[0].message.content.strip()
             logger.info(f"Groq Vision raw response text: {extracted_text}")
             
-            # Parse the JSON response
-            if extracted_text.startswith("```"):
-                # Remove markdown code blocks
-                logger.info("Detected markdown code block, removing...")
-                extracted_text = extracted_text.split("```")[1]
-                if extracted_text.startswith("json"):
-                    extracted_text = extracted_text[4:]
-                extracted_text = extracted_text.strip()
-                logger.info(f"After removing markdown: {extracted_text}")
+            # Parse the JSON response - IMPROVED PARSING
+            # Handle case where Groq adds explanatory text before the JSON
+            if "```" in extracted_text:
+                logger.info("Detected code block, extracting JSON...")
+                # Find the JSON block - it's between ``` markers
+                parts = extracted_text.split("```")
+                if len(parts) >= 2:
+                    # Get the content between first ``` pair
+                    json_block = parts[1]
+                    # Remove language identifier if present
+                    if json_block.strip().startswith("json"):
+                        json_block = json_block.strip()[4:]
+                    extracted_text = json_block.strip()
+                    logger.info(f"Extracted JSON from code block: {extracted_text[:200]}...")
             
             # Try to parse JSON directly
             try:
@@ -114,12 +161,23 @@ Return the data in this exact JSON format:
                 
                 brand = data.get("brand", "Unknown")
                 ingredients = data.get("ingredients", [])
+                nutrition_data = data.get("nutrition")
                 
-                logger.info(f"Extracted - Brand: {brand}, Ingredients count: {len(ingredients)}")
+                # Parse nutrition facts if present
+                nutrition = None
+                if nutrition_data:
+                    try:
+                        nutrition = NutritionFacts(**nutrition_data)
+                        logger.info(f"Extracted nutrition: {nutrition.calories} cal, {nutrition.total_fat_g}g fat, {nutrition.protein_g}g protein")
+                    except Exception as e:
+                        logger.warning(f"Failed to parse nutrition data: {e}")
+                
+                logger.info(f"Extracted - Brand: {brand}, Ingredients: {len(ingredients)}, Has Nutrition: {nutrition is not None}")
                 
                 return LabelExtraction(
                     brand=brand,
-                    ingredients=ingredients
+                    ingredients=ingredients,
+                    nutrition=nutrition
                 )
             except json.JSONDecodeError as json_err:
                 # Fallback: use structured output to parse the text
@@ -128,7 +186,7 @@ Return the data in this exact JSON format:
                 logger.info("Using Gemini structured output as fallback...")
                 
                 parse_prompt = f"""
-                Extract brand and ingredients from this text:
+                Extract brand, ingredients, and nutrition facts from this text:
                 {extracted_text}
                 """
                 result = self.label_llm.invoke(parse_prompt)
@@ -141,7 +199,7 @@ Return the data in this exact JSON format:
             logger.error(f"Error details: {str(e)}")
             import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
-            return LabelExtraction(brand="Unknown", ingredients=[])
+            return LabelExtraction(brand="Unknown", ingredients=[], nutrition=None)
 
     def fetch_clinical_evidence(self, ingredient: str) -> IngredientProfile:
         """Fetch clinical evidence and health information for an ingredient (legacy single-ingredient method)"""
@@ -153,8 +211,8 @@ Return the data in this exact JSON format:
         if not ingredients:
             return []
         
-        # Limit to 10 ingredients to keep prompt manageable
-        ingredients = ingredients[:10]
+        # Process all ingredients (no limit)
+        logger.info(f"Batch analyzing {len(ingredients)} ingredients in single AI call")
         
         # Gather external data for each ingredient
         ingredient_contexts = []
@@ -360,7 +418,7 @@ Use the provided scientific context from Wikipedia and OpenFoodFacts, plus your 
 CURRENT PRODUCT:
 Brand: {brand}
 Category: {category}
-Top Ingredients: {', '.join(ingredients[:5])}
+Top Ingredients: {', '.join(ingredients)}
 
 {user_constraints}
 
