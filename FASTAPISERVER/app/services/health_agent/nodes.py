@@ -23,7 +23,30 @@ class AgentNodes:
     def researcher_node(self, state: HealthCoPilotState):
         # Batch analyze all ingredients in a single AI call (optimized!)
         knowledge = self.tools.fetch_clinical_evidence_batch(state["ingredients_list"][:10])
-        alternatives = self.tools.find_better_alternatives(state["brand_name"], state["ingredients_list"])
+        
+        # Parse user profile for alternatives filtering
+        # user_raw_health is a string like "Allergies: Peanuts, Gluten. Dietary preferences: Vegan"
+        user_profile_dict = {}
+        raw_profile = state.get("user_raw_health", "")
+        if raw_profile:
+            # Extract allergens
+            if "Allergies:" in raw_profile or "allergies:" in raw_profile.lower():
+                # Simple extraction - this is basic, can be improved
+                allergens_part = raw_profile.split("Allergies:")[-1].split(".")[0] if "Allergies:" in raw_profile else raw_profile.split("allergies:")[-1].split(".")[0]
+                user_profile_dict["allergens"] = [a.strip().lower() for a in allergens_part.split(",") if a.strip()]
+            
+            # Extract diet
+            if "vegan" in raw_profile.lower():
+                user_profile_dict["diet"] = "vegan"
+            elif "vegetarian" in raw_profile.lower():
+                user_profile_dict["diet"] = "vegetarian"
+        
+        alternatives = self.tools.find_better_alternatives(
+            state["brand_name"], 
+            state["ingredients_list"],
+            category=None,  # Could extract from product analysis
+            user_profile=user_profile_dict if user_profile_dict else None
+        )
         return {"ingredient_knowledge_base": knowledge, "product_alternatives": alternatives}
 
     def risk_analyzer_node(self, state: HealthCoPilotState):

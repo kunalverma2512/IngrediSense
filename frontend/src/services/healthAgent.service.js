@@ -101,7 +101,7 @@ export const analyzeFoodLabel = async (base64Image, signal = null) => {
                     'Content-Type': 'multipart/form-data',
                 },
                 // Increase timeout as AI analysis can take time (especially with multiple AI calls)
-                timeout: 180000, // 3 minutes (increased from 2min to handle batch processing)
+                timeout: 240000, // 4 minutes (increased to handle OpenFoodFacts API delays)
                 // Add abort signal if provided
                 signal: signal,
             }

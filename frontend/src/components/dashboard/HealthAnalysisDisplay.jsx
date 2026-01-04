@@ -78,17 +78,28 @@ const HealthAnalysisDisplay = ({ insight }) => {
                     });
                 }
             }
-            // Better Options (flexible)
+            // Better Options (flexible matching for multiple formats)
             else if (trimmedLine.match(/\*?\*?Better Options?:?\*?\*?/i) || trimmedLine.includes('🛒')) {
                 currentSection = 'betterOptions';
             }
-            else if (currentSection === 'betterOptions' && (trimmedLine.match(/^[-*]\s+\*?\*?([^*:(]+)/) || trimmedLine.match(/^\*\s+\*\*([^*:(]+)/))) {
-                const match = trimmedLine.match(/^[-*]\s+\*?\*?([^*:(]+)\*?\*?[:\s]*(.*)/) || trimmedLine.match(/^\*\s+\*\*([^*:(]+)\*\*[:\s]*(.*)/);
-                if (match) {
+            else if (currentSection === 'betterOptions' && trimmedLine) {
+                // Gemini format: "Product Name (Why it's better: reason)"
+                const geminiMatch = trimmedLine.match(/^[-*\s]*(.+?)\s*\(\s*Why it's better:\s*(.+?)\s*\)$/i);
+                if (geminiMatch) {
                     sections.betterOptions.push({
-                        name: match[1].replace(/\(.*?\)/, '').trim(),
-                        details: match[2].trim()
+                        name: geminiMatch[1].trim(),
+                        details: geminiMatch[2].trim()
                     });
+                }
+                // Old format: "**Product Name**: details" or "Product Name (Grade X)"
+                else {
+                    const oldMatch = trimmedLine.match(/^[-*]\s+\*?\*?([^*:(]+)\*?\*?[:\s]*(.*)/) || trimmedLine.match(/^\*\s+\*\*([^*:(]+)\*\*[:\s]*(.*)/);
+                    if (oldMatch) {
+                        sections.betterOptions.push({
+                            name: oldMatch[1].replace(/\(.*?\)/, '').trim(),
+                            details: oldMatch[2].trim()
+                        });
+                    }
                 }
             }
         });
