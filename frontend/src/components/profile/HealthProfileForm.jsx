@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { FiSave, FiAlertCircle, FiPlus, FiX, FiCheck } from 'react-icons/fi';
+import {
+    FiSave, FiAlertCircle, FiPlus, FiX, FiCheck,
+    FiHeart, FiShield, FiTarget, FiActivity
+} from 'react-icons/fi';
 import { getHealthProfile, updateHealthProfile } from '../../services/profile.service';
 import { useAuth } from '../../context/AuthContext';
 
@@ -24,7 +27,6 @@ const HealthProfileForm = () => {
         gender: ''
     });
 
-    // Temporary inputs for array fields
     const [inputs, setInputs] = useState({
         allergy: '',
         condition: '',
@@ -49,7 +51,6 @@ const HealthProfileForm = () => {
                 });
             } catch (err) {
                 console.error('Error loading profile:', err);
-                // Don't set error, just use empty form data
             } finally {
                 setLoading(false);
             }
@@ -58,7 +59,6 @@ const HealthProfileForm = () => {
         if (isAuthenticated) {
             fetchProfile();
         } else {
-            // No auth, stop loading
             setLoading(false);
         }
     }, [isAuthenticated]);
@@ -94,7 +94,6 @@ const HealthProfileForm = () => {
         setError('');
 
         try {
-            // Prepare payload
             const payload = {
                 allergies: formData.allergies,
                 conditions: formData.conditions,
@@ -109,20 +108,15 @@ const HealthProfileForm = () => {
             };
 
             await updateHealthProfile(payload);
-
             setMessage('Profile updated successfully!');
 
-            // Check if user came from scan page
             const shouldReturnToScan = localStorage.getItem('returnToScanPage');
             if (shouldReturnToScan === 'true') {
-                // Clear the flag
                 localStorage.removeItem('returnToScanPage');
-                // Navigate back to scan page after a short delay
                 setTimeout(() => {
                     navigate('/scan');
                 }, 800);
             } else {
-                // Normal behavior - just show message
                 setTimeout(() => setMessage(''), 3000);
             }
         } catch (err) {
@@ -133,44 +127,81 @@ const HealthProfileForm = () => {
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading profile...</div>;
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                < div className="text-center" >
+                    <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-600 text-lg">Loading your profile...</p>
+                </div >
+            </div >
+        );
+    }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-12">
+        <form onSubmit={handleSubmit} className="space-y-16 pb-32">
             {/* Status Messages */}
-            {message && (
-                <div className="p-4 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200 flex items-center gap-2">
-                    <FiCheck className="text-xl" /> {message}
-                </div>
-            )}
-            {error && (
-                <div className="p-4 bg-red-50 text-red-700 rounded-xl border border-red-200 flex items-center gap-2">
-                    <FiAlertCircle className="text-xl" /> {error}
-                </div>
-            )}
+            <AnimatePresence>
+                {message && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-6"
+                    >
+                        <div className="flex items-center gap-3">
+                            <FiCheck className="text-2xl text-emerald-600" />
+                            <p className="text-emerald-900 font-semibold text-lg">{message}</p>
+                        </div>
+                    </motion.div>
+                )}
 
-            {/* Basic Stats (Optional) */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Basic Information (Optional)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="bg-red-50 border-2 border-red-200 rounded-2xl p-6"
+                    >
+                        <div className="flex items-center gap-3">
+                            <FiAlertCircle className="text-2xl text-red-600" />
+                            <p className="text-red-900 font-semibold text-lg">{error}</p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Basic Information */}
+            <div className="space-y-12">
+                <div>
+                    <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3">Basic Information</h2>
+                    <p className="text-xl text-gray-600">Tell us about yourself (optional)</p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16 gap-y-10">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
+                        <label className="block text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                            Age
+                        </label>
                         <input
                             type="number"
                             name="age"
                             value={formData.age}
                             onChange={handleStatChange}
-                            placeholder="e.g. 25"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 focus:outline-none"
+                            placeholder="25"
+                            className="w-full px-0 py-4 text-2xl font-medium text-gray-900 bg-transparent border-0 border-b-3 border-gray-200 focus:border-emerald-600 focus:outline-none transition-all placeholder:text-gray-300"
                         />
                     </div>
+
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                        <label className="block text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                            Gender
+                        </label>
                         <select
                             name="gender"
                             value={formData.gender}
                             onChange={handleStatChange}
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 focus:outline-none"
+                            className="w-full px-0 py-4 text-2xl font-medium text-gray-900 bg-transparent border-0 border-b-3 border-gray-200 focus:border-emerald-600 focus:outline-none transition-all"
                         >
                             <option value="">Select...</option>
                             <option value="Male">Male</option>
@@ -179,152 +210,274 @@ const HealthProfileForm = () => {
                             <option value="Prefer not to say">Prefer not to say</option>
                         </select>
                     </div>
+
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Height (cm)</label>
+                        <label className="block text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                            Height (cm)
+                        </label>
                         <input
                             type="number"
                             name="height"
                             value={formData.height}
                             onChange={handleStatChange}
-                            placeholder="e.g. 175"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 focus:outline-none"
+                            placeholder="175"
+                            className="w-full px-0 py-4 text-2xl font-medium text-gray-900 bg-transparent border-0 border-b-3 border-gray-200 focus:border-emerald-600 focus:outline-none transition-all placeholder:text-gray-300"
                         />
                     </div>
+
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
+                        <label className="block text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                            Weight (kg)
+                        </label>
                         <input
                             type="number"
                             name="weight"
                             value={formData.weight}
                             onChange={handleStatChange}
-                            placeholder="e.g. 70"
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 focus:outline-none"
+                            placeholder="70"
+                            className="w-full px-0 py-4 text-2xl font-medium text-gray-900 bg-transparent border-0 border-b-3 border-gray-200 focus:border-emerald-600 focus:outline-none transition-all placeholder:text-gray-300"
                         />
                     </div>
                 </div>
             </div>
 
-            {/* Medical Conditions */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Medical Conditions</h3>
-                <p className="text-gray-500 mb-6 text-sm">Do you have any conditions we should know about? (e.g. Diabetes, Hypertension, IBS)</p>
+            {/* Health Information Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16 gap-y-16 lg:auto-rows-fr">
+                {/* Medical Conditions */}
+                <div className="flex flex-col space-y-6">
+                    <div>
+                        <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3">Medical Conditions</h2>
+                        <p className="text-xl text-gray-600">Any health conditions we should know about?</p>
+                        <p className="text-gray-500 mt-2">e.g., Diabetes, Hypertension, Heart Disease</p>
+                    </div>
 
-                <div className="flex gap-2 mb-4">
-                    <input
-                        type="text"
-                        name="condition"
-                        value={inputs.condition}
-                        onChange={handleInputChange}
-                        placeholder="Add a condition..."
-                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 focus:outline-none"
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem('conditions', 'condition'))}
-                    />
-                    <button
-                        type="button"
-                        onClick={() => addItem('conditions', 'condition')}
-                        className="px-6 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
-                    >
-                        <FiPlus />
-                    </button>
+                    <div className="flex gap-6 items-end">
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                name="condition"
+                                value={inputs.condition}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Diabetes, Hypertension..."
+                                className="w-full px-0 py-4 text-xl font-medium text-gray-900 bg-transparent border-0 border-b-3 border-gray-200 focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-300"
+                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem('conditions', 'condition'))}
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => addItem('conditions', 'condition')}
+                            className="px-5 py-3 bg-gray-900 text-white font-bold hover:bg-gray-800 transition-colors flex items-center gap-2"
+                        >
+                            <FiPlus className="text-xl" />
+                        </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3 max-h-40 overflow-y-auto pr-2">
+                        {formData.conditions.map((item, idx) => (
+                            <motion.span
+                                key={idx}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="px-5 py-3 bg-blue-50 border-2 border-blue-200 text-blue-900 rounded-xl flex items-center gap-3 font-semibold h-fit"
+                            >
+                                {item}
+                                <button
+                                    type="button"
+                                    onClick={() => removeItem('conditions', idx)}
+                                    className="hover:text-blue-600 transition-colors"
+                                >
+                                    <FiX className="text-lg" />
+                                </button>
+                            </motion.span>
+                        ))}
+                        {formData.conditions.length === 0 && (
+                            <p className="text-gray-400 italic py-2">No conditions added.</p>
+                        )}
+                    </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                    {formData.conditions.map((item, idx) => (
-                        <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg flex items-center gap-2 font-medium">
-                            {item}
-                            <button type="button" onClick={() => removeItem('conditions', idx)} className="hover:text-blue-900"><FiX /></button>
-                        </span>
-                    ))}
-                    {formData.conditions.length === 0 && <span className="text-gray-400 italic text-sm">No conditions added.</span>}
+
+                {/* Allergies */}
+                <div className="flex flex-col space-y-6">
+                    <div>
+                        <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3">Allergies & Intolerances</h2>
+                        <p className="text-xl text-gray-600">What should you absolutely avoid?</p>
+                        <p className="text-gray-500 mt-2">e.g., Peanuts, Gluten, Shellfish, Dairy</p>
+                    </div>
+
+                    <div className="flex gap-6 items-end">
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                name="allergy"
+                                value={inputs.allergy}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Peanuts, Shellfish, Gluten..."
+                                className="w-full px-0 py-4 text-xl font-medium text-gray-900 bg-transparent border-0 border-b-3 border-gray-200 focus:border-red-500 focus:outline-none transition-all placeholder:text-gray-300"
+                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem('allergies', 'allergy'))}
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => addItem('allergies', 'allergy')}
+                            className="px-5 py-3 bg-gray-900 text-white font-bold hover:bg-gray-800 transition-colors flex items-center gap-2"
+                        >
+                            <FiPlus className="text-xl" />
+                        </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3 max-h-40 overflow-y-auto pr-2">
+                        {formData.allergies.map((item, idx) => (
+                            <motion.span
+                                key={idx}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="px-5 py-3 bg-red-50 border-2 border-red-200 text-red-900 rounded-xl flex items-center gap-3 font-semibold h-fit"
+                            >
+                                {item}
+                                <button
+                                    type="button"
+                                    onClick={() => removeItem('allergies', idx)}
+                                    className="hover:text-red-600 transition-colors"
+                                >
+                                    <FiX className="text-lg" />
+                                </button>
+                            </motion.span>
+                        ))}
+                        {formData.allergies.length === 0 && (
+                            <p className="text-gray-400 italic py-2">No allergies added.</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Dietary Preferences */}
+                <div className="flex flex-col space-y-6">
+                    <div>
+                        <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3">Dietary Preferences</h2>
+                        <p className="text-xl text-gray-600">Any specific diet you follow?</p>
+                        <p className="text-gray-500 mt-2">e.g., Vegan, Keto, Low-Carb, Gluten-Free</p>
+                    </div>
+
+                    <div className="flex gap-6 items-end">
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                name="diet"
+                                value={inputs.diet}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Vegan, Keto, Paleo..."
+                                className="w-full px-0 py-4 text-xl font-medium text-gray-900 bg-transparent border-0 border-b-3 border-gray-200 focus:border-amber-500 focus:outline-none transition-all placeholder:text-gray-300"
+                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem('diets', 'diet'))}
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => addItem('diets', 'diet')}
+                            className="px-5 py-3 bg-gray-900 text-white font-bold hover:bg-gray-800 transition-colors flex items-center gap-2"
+                        >
+                            <FiPlus className="text-xl" />
+                        </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3 max-h-40 overflow-y-auto pr-2">
+                        {formData.diets.map((item, idx) => (
+                            <motion.span
+                                key={idx}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="px-5 py-3 bg-amber-50 border-2 border-amber-200 text-amber-900 rounded-xl flex items-center gap-3 font-semibold h-fit"
+                            >
+                                {item}
+                                <button
+                                    type="button"
+                                    onClick={() => removeItem('diets', idx)}
+                                    className="hover:text-amber-600 transition-colors"
+                                >
+                                    <FiX className="text-lg" />
+                                </button>
+                            </motion.span>
+                        ))}
+                        {formData.diets.length === 0 && (
+                            <p className="text-gray-400 italic py-2">No dietary preferences added.</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Health Goals */}
+                <div className="flex flex-col space-y-6">
+                    <div>
+                        <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3">Health Goals</h2>
+                        <p className="text-xl text-gray-600">What are you trying to achieve?</p>
+                        <p className="text-gray-500 mt-2">e.g., Weight Loss, Muscle Gain, Better Energy, Better Sleep</p>
+                    </div>
+
+                    <div className="flex gap-6 items-end">
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                name="goal"
+                                value={inputs.goal}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Weight Loss, Build Muscle..."
+                                className="w-full px-0 py-4 text-xl font-medium text-gray-900 bg-transparent border-0 border-b-3 border-gray-200 focus:border-emerald-600 focus:outline-none transition-all placeholder:text-gray-300"
+                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem('goals', 'goal'))}
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => addItem('goals', 'goal')}
+                            className="px-5 py-3 bg-gray-900 text-white font-bold hover:bg-gray-800 transition-colors flex items-center gap-2"
+                        >
+                            <FiPlus className="text-xl" />
+                        </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3 max-h-40 overflow-y-auto pr-2">
+                        {formData.goals.map((item, idx) => (
+                            <motion.span
+                                key={idx}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="px-5 py-3 bg-emerald-50 border-2 border-emerald-200 text-emerald-900 rounded-xl flex items-center gap-3 font-semibold h-fit"
+                            >
+                                {item}
+                                <button
+                                    type="button"
+                                    onClick={() => removeItem('goals', idx)}
+                                    className="hover:text-emerald-600 transition-colors"
+                                >
+                                    <FiX className="text-lg" />
+                                </button>
+                            </motion.span>
+                        ))}
+                        {formData.goals.length === 0 && (
+                            <p className="text-gray-400 italic py-2">No goals set yet.</p>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* Allergies */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Allergies & Intolerances</h3>
-                <p className="text-gray-500 mb-6 text-sm">What should you absolutely avoid? (e.g. Peanuts, Gluten, Shellfish)</p>
-
-                <div className="flex gap-2 mb-4">
-                    <input
-                        type="text"
-                        name="allergy"
-                        value={inputs.allergy}
-                        onChange={handleInputChange}
-                        placeholder="Add an allergy..."
-                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 focus:outline-none"
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem('allergies', 'allergy'))}
-                    />
-                    <button
-                        type="button"
-                        onClick={() => addItem('allergies', 'allergy')}
-                        className="px-6 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
-                    >
-                        <FiPlus />
-                    </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {formData.allergies.map((item, idx) => (
-                        <span key={idx} className="bg-red-50 text-red-700 px-3 py-1 rounded-lg flex items-center gap-2 font-medium">
-                            {item}
-                            <button type="button" onClick={() => removeItem('allergies', idx)} className="hover:text-red-900"><FiX /></button>
-                        </span>
-                    ))}
-                    {formData.allergies.length === 0 && <span className="text-gray-400 italic text-sm">No allergies added.</span>}
-
-                </div>
-            </div>
-
-            {/* Goals */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Health Goals</h3>
-                <p className="text-gray-500 mb-6 text-sm">What are you trying to achieve? (e.g. Muscle Gain, Weight Loss, Better Sleep)</p>
-
-                <div className="flex gap-2 mb-4">
-                    <input
-                        type="text"
-                        name="goal"
-                        value={inputs.goal}
-                        onChange={handleInputChange}
-                        placeholder="Add a goal..."
-                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 focus:outline-none"
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addItem('goals', 'goal'))}
-                    />
-                    <button
-                        type="button"
-                        onClick={() => addItem('goals', 'goal')}
-                        className="px-6 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
-                    >
-                        <FiPlus />
-                    </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {formData.goals.map((item, idx) => (
-                        <span key={idx} className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg flex items-center gap-2 font-medium">
-                            {item}
-                            <button type="button" onClick={() => removeItem('goals', idx)} className="hover:text-emerald-900"><FiX /></button>
-                        </span>
-                    ))}
-                    {formData.goals.length === 0 && <span className="text-gray-400 italic text-sm">No goals added.</span>}
-                </div>
-            </div>
-
-            {/* Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <p className="text-gray-500 text-sm hidden md:block">
-                        All fields are optional. You can update this anytime.
-                    </p>
+            {/* Save Button - Sticky Bottom */}
+            <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-6 px-6 mt-16 z-40">
+                <div className="max-w-7xl mx-auto">
                     <button
                         type="submit"
                         disabled={saving}
-                        className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-full hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-70 ml-auto md:ml-0"
+                        className="w-full md:w-auto px-12 py-4 bg-gray-900 text-white text-lg font-bold hover:bg-gray-800 transition-colors flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                        {saving ? 'Saving...' : <><FiSave /> Save Profile</>}
+                        {saving ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                Saving Profile...
+                            </>
+                        ) : (
+                            <>
+                                <FiSave className="text-xl" />
+                                Save Profile
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
-
-            {/* Spacer for fixed bottom bar */}
-            <div className="h-20" />
         </form>
     );
 };
