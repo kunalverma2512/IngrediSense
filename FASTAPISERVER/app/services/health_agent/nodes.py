@@ -47,11 +47,12 @@ class AgentNodes:
             elif "vegetarian" in raw_profile.lower():
                 user_profile_dict["diet"] = "vegetarian"
         
+        
         alternatives = self.tools.find_better_alternatives(
             state["brand_name"], 
             state["ingredients_list"],
-            category=None,  # Could extract from product analysis
-            user_profile=user_profile_dict if user_profile_dict else None
+            user_health=state["user_raw_health"],  # Pass raw health string for OpenFoodFacts
+            category=None  # Will be auto-detected from OpenFoodFacts
         )
         return {"ingredient_knowledge_base": knowledge, "product_alternatives": alternatives}
 

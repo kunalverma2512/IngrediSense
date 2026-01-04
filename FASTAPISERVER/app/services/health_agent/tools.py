@@ -421,104 +421,159 @@ Use the provided scientific context from Wikipedia and OpenFoodFacts, plus your 
         logger.warning(f"Could not detect category for '{brand_name}', using generic 'snacks'")
         return 'snacks', 'fallback'
 
-    def find_better_alternatives(self, brand: str, ingredients: List[str], category: str = None, user_profile: dict = None) -> List[str]:
-        """
-        Find healthier alternative products using Gemini AI.
-        Fast, reliable, and personalized to user profile.
-        """
-        # 1. Detect product category (simple keyword matching)
-        if not category:
-            category, _ = self.get_product_category(brand, ingredients)
-        
-        # 2. Build AI prompt for alternatives
-        user_constraints = ""
-        if user_profile:
-            allergens = user_profile.get("allergens", [])
-            diet = user_profile.get("diet", "")
-            if allergens:
-                user_constraints += f"\nUser Allergens to AVOID: {', '.join(allergens)}"
-            if diet:
-                user_constraints += f"\nUser Diet: {diet}"
-        
-        prompt = f"""You are a nutrition expert. Suggest 3 healthier alternative products for this item.
-
-CURRENT PRODUCT:
-Brand: {brand}
-Category: {category}
-Top Ingredients: {', '.join(ingredients)}
-
-{user_constraints}
-
-REQUIREMENTS:
-1. Suggest 3 REAL, SPECIFIC product brands (not generic like "organic chips")
-2. Each must be HEALTHIER than current product (lower sodium/sugar/fat OR higher protein/fiber)
-3. Each must be WIDELY AVAILABLE in stores (Target, Whole Foods, Walmart, etc.)
-4. DO NOT suggest the same brand as current product
-5. If user has allergens, exclude products containing those allergens
-6. If user follows a diet (vegan/vegetarian), suggest matching products
-
-FORMAT (exactly like this):
-Product Name 1 (Why it's better: specific reason)
-Product Name 2 (Why it's better: specific reason)  
-Product Name 3 (Why it's better: specific reason)
-
-Examples:
-- Hippeas Chickpea Puffs (Why it's better: 4g protein vs 2g, baked not fried)
-- Terra Veggie Chips (Why it's better: real vegetables, 30% less sodium)
-- Simply 7 Quinoa Chips (Why it's better: whole grains, no artificial flavors)"""
-
+    def find_better_alternatives(self, brand: str, ingredients: List[str], user_health: str, category: str = None) -> List[str]:
+        """Find healthier alternatives using OpenFoodFacts API (fast, real products)"""
         try:
-            logger.info(f"Asking Gemini for alternatives to {category} product")
-            response = self.llm.invoke(prompt)
-            alternatives_text = response.content.strip()
+            logger.info(f"Finding alternatives for {brand} using OpenFoodFacts API...")
+            start_time = __import__('time').time()
             
-            # Parse response into list
+            # If no category provided, detect it from OpenFoodFacts
+            if not category:
+                logger.info("Category not provided, detecting via OpenFoodFacts...")
+                search_url = f"https://world.openfoodfacts.org/cgi/search.pl?search_terms={brand}&json=1&page_size=1"
+                response = requests.get(search_url, timeout=5)
+                if response.ok:
+                    products = response.json().get("products", [])
+                    if products:
+                        category = products[0].get("categories_tags", ["snacks"])[0].replace("en:", "")
+                        logger.info(f"Category '{category}' detected via OpenFoodFacts API")
+            
+            if not category:
+                category = "snacks"  # Default fallback
+            
+            # Parse user health constraints
+            is_vegan = "vegan" in user_health.lower()
+            is_vegetarian = is_vegan or "vegetarian" in user_health.lower()
+            has_gluten_allergy = "gluten" in user_health.lower()
+            
+            # Search OpenFoodFacts for better alternatives in same category
+            search_url = f"https://world.openfoodfacts.org/category/{category}.json"
+            params = {
+                "page_size": 50,  # Get more to filter
+                "json": 1,
+                "fields": "product_name,brands,nutriscore_grade,nova_group,ingredients_text,allergens_tags,labels_tags"
+            }
+            
+            response = requests.get(search_url, params=params, timeout=10)
+            if not response.ok:
+                logger.warning(f"OpenFoodFacts search failed: {response.status_code}")
+                return self._get_fallback_alternatives(category)
+            
+            products = response.json().get("products", [])
+            logger.info(f"Found {len(products)} products in category '{category}'")
+            
+            # Filter and score products
             alternatives = []
-            for line in alternatives_text.split('\n'):
-                line = line.strip()
-                if line and not line.startswith('#') and not line.lower().startswith('here'):
-                    # Remove bullet points and numbering
-                    cleaned = line.lstrip('- •*123456789. ')
-                    if cleaned and len(cleaned) > 10:  # Filter out short lines
-                        alternatives.append(cleaned)
-            
-            # Return top 3
-            alternatives = alternatives[:3]
-            
-            if alternatives:
-                logger.info(f"Found {len(alternatives)} alternatives via Gemini AI")
-                return alternatives
-            else:
-                # Fallback if parsing failed
-                logger.warning("Gemini response parsing failed, using generic alternatives")
-                return self._get_generic_alternatives(category)
+            for product in products:
+                # Skip if no name or brand
+                if not product.get("product_name") or not product.get("brands"):
+                    continue
                 
+                # Skip the same product
+                product_brand = product.get("brands", "").lower()
+                if brand.lower() in product_brand or product_brand in brand.lower():
+                    continue
+                
+                # Filter by health constraints
+                allergens = product.get("allergens_tags", [])
+                labels = product.get("labels_tags", [])
+                
+                # Skip if has gluten and user is allergic
+                if has_gluten_allergy and any("gluten" in a for a in allergens):
+                    continue
+                
+                # Filter by diet
+                if is_vegan and "en:vegan" not in labels:
+                    continue
+                if is_vegetarian and not is_vegan and "en:vegetarian" not in labels:
+                    continue
+                
+                # Score product (lower is better)
+                score = 0
+                nutriscore = product.get("nutriscore_grade", "e").lower()
+                nova_group = product.get("nova_group", 4)
+                
+                # Nutriscore: a=0, b=1, c=2, d=3, e=4
+                nutriscore_map = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4}
+                score += nutriscore_map.get(nutriscore, 4) * 10
+                
+                # NOVA group (1=unprocessed, 4=ultra-processed)
+                score += nova_group * 5
+                
+                # Prefer products with health labels
+                if "en:organic" in labels:
+                    score -= 3
+                if "en:no-additives" in labels:
+                    score -= 2
+                if "en:low-fat" in labels:
+                    score -= 2
+                if "en:low-sugar" in labels:
+                    score -= 2
+                
+                alternatives.append({
+                    "name": f"{product.get('brands', '')} {product.get('product_name', '')}".strip(),
+                    "nutriscore": nutriscore.upper(),
+                    "nova": nova_group,
+                    "score": score
+                })
+            
+            # Sort by score and get top 3
+            alternatives.sort(key=lambda x: x["score"])
+            top_alternatives = alternatives[:3]
+            
+            # Format for output (match frontend expectations)
+            formatted_alternatives = []
+            for alt in top_alternatives:
+                # Generate simple "why it's better" based on scores
+                reasons = []
+                if alt["nutriscore"] in ["A", "B"]:
+                    reasons.append(f"Nutriscore {alt['nutriscore']} rating")
+                if alt["nova"] <= 2:
+                    reasons.append("minimally processed")
+                if not reasons:
+                    reasons.append("better nutritional profile")
+                
+                # Use OpenFoodFacts format that frontend expects
+                formatted_alternatives.append(
+                    f"{alt['name']} (Why it's better: {', '.join(reasons)}, available at major grocery stores)"
+                )
+            
+            fetch_time = __import__('time').time() - start_time
+            logger.info(f"Found {len(formatted_alternatives)} alternatives via OpenFoodFacts in {fetch_time:.2f} seconds")
+            
+            return formatted_alternatives if formatted_alternatives else self._get_fallback_alternatives(category)
+            
         except Exception as e:
-            logger.error(f"Error getting alternatives from Gemini: {e}")
-            return self._get_generic_alternatives(category)
+            logger.error(f"Error finding alternatives via OpenFoodFacts: {e}")
+            return self._get_fallback_alternatives(category or "snacks")
     
-    def _get_generic_alternatives(self, category: str) -> List[str]:
-        """Fallback generic alternatives based on category"""
-        generic_map = {
-            'chips': [
-                "Hippeas Chickpea Puffs (Why it's better: 4g protein, baked not fried)",
-                "Terra Veggie Chips (Why it's better: real vegetables, less sodium)",
-                "Simply 7 Quinoa Chips (Why it's better: whole grains, no artificial ingredients)"
+    def _get_fallback_alternatives(self, category: str) -> List[str]:
+        """Fallback alternatives if OpenFoodFacts fails"""
+        fallback_map = {
+            "snacks": [
+                "Hippeas Organic Chickpea Puffs (Why it's better: Nutriscore B, baked not fried, higher protein, available at Target/Whole Foods)",
+                "Siete Grain Free Tortilla Chips (Why it's better: made with avocado oil, no refined grains, available at Whole Foods/Sprouts)",
+                "Rhythm Superfoods Kale Chips (Why it's better: Nutriscore A, air-crisped vegetables, high fiber, available at Whole Foods)"
             ],
-            'cookies': [
-                "Simple Mills Almond Flour Crackers (Why it's better: grain-free, lower sugar)",
-                "Annie's Organic Bunny Grahams (Why it's better: organic, no artificial flavors)",
-                "Enjoy Life Soft Baked Cookies (Why it's better: allergen-free, no refined sugar)"
+            "cookies": [
+                "Simple Mills Almond Flour Crackers (Why it's better: Nutriscore B, grain-free, lower sugar, available at Target/Whole Foods)",
+                "Hu Kitchen Dark Chocolate (Why it's better: organic, no refined sugar, available at Whole Foods)",
             ],
-            'noodles': [
-                "Lotus Foods Brown Rice Ramen (Why it's better: whole grain, organic)",
-                "Dr. McDougall's Right Foods (Why it's better: low sodium, no MSG)",
-                "Simply Asia Organic Noodles (Why it's better: organic, no preservatives)"
-            ],
+            "chips": [
+                  "Hippeas Chickpea Puffs (Why it's better: 4g protein, baked not fried, available at Target)",
+                "Terra Veggie Chips (Why it's better: real vegetables, less sodium, available at Whole Foods)",
+                "Simply 7 Quinoa Chips (Why it's better: whole grains, no artificial ingredients, available at Target)"
+            ]
         }
         
-        return generic_map.get(category, [
-            "Whole grain alternatives (Why it's better: higher fiber, less processed)",
-            "Organic options (Why it's better: no pesticides, cleaner ingredients)",
-            "Fresh whole foods (Why it's better: no additives, naturally nutritious)"
-        ])
+        # Try to match category
+        for key in fallback_map:
+            if key in category.lower():
+                return fallback_map[key]
+        
+        # Default to snacks
+        return fallback_map["snacks"]
+    
+    def _get_generic_alternatives(self, category: str) -> List[str]:
+        """Legacy fallback - redirects to new fallback"""
+        return self._get_fallback_alternatives(category)
