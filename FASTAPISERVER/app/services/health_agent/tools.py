@@ -2,6 +2,8 @@ import os
 import cv2
 import json
 import base64
+import asyncio
+import aiohttp
 import requests
 from bs4 import BeautifulSoup
 from typing import List, Optional
@@ -206,6 +208,27 @@ IMPORTANT:
         # This method is kept for backwards compatibility but not used in the main workflow
         return self.fetch_clinical_evidence_batch([ingredient])[0]
 
+    async def _fetch_wikipedia_async(self, session: aiohttp.ClientSession, ingredient: str) -> tuple[str, str]:
+        """Async fetch Wikipedia data for a single ingredient"""
+        try:
+            wiki_url = f"https://en.wikipedia.org/wiki/{ingredient.replace(' ', '_')}"
+            async with session.get(wiki_url, timeout=aiohttp.ClientTimeout(total=5)) as response:
+                html = await response.text()
+                soup = BeautifulSoup(html, "lxml")
+                wiki_text = " ".join(p.text for p in soup.select("p")[:3])
+                logger.debug(f"Fetched Wikipedia data for {ingredient}")
+                return ingredient, wiki_text
+        except Exception as e:
+            logger.debug(f"Could not fetch Wikipedia data for {ingredient}: {e}")
+            return ingredient, ""
+    
+    async def _fetch_all_wikipedia_async(self, ingredients: List[str]) -> dict[str, str]:
+        """Fetch Wikipedia data for all ingredients in parallel"""
+        async with aiohttp.ClientSession() as session:
+            tasks = [self._fetch_wikipedia_async(session, ing) for ing in ingredients]
+            results = await asyncio.gather(*tasks)
+            return {ing: text for ing, text in results}
+
     def fetch_clinical_evidence_batch(self, ingredients: List[str]) -> List[IngredientProfile]:
         """Fetch clinical evidence for multiple ingredients in a single AI call (optimized)"""
         if not ingredients:
@@ -214,22 +237,26 @@ IMPORTANT:
         # Process all ingredients (no limit)
         logger.info(f"Batch analyzing {len(ingredients)} ingredients in single AI call")
         
-        # Gather external data for each ingredient
+        # Fetch Wikipedia data for ALL ingredients in PARALLEL (async)
+        logger.info(f"Fetching Wikipedia data for {len(ingredients)} ingredients in parallel...")
+        start_time = __import__('time').time()
+        
+        # Run async Wikipedia fetching in separate thread to avoid event loop conflict
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(asyncio.run, self._fetch_all_wikipedia_async(ingredients))
+            wikipedia_data = future.result()
+        
+        fetch_time = __import__('time').time() - start_time
+        logger.info(f"Wikipedia parallel fetch completed in {fetch_time:.2f} seconds")
+        
+        # Gather contexts with Wikipedia data
         ingredient_contexts = []
         for ing in ingredients:
-            wiki_text = ""
+            wiki_text = wikipedia_data.get(ing, "")
             off_data = {}
             
-            # Try to fetch Wikipedia context
-            try:
-                wiki_url = f"https://en.wikipedia.org/wiki/{ing.replace(' ', '_')}"
-                soup = BeautifulSoup(requests.get(wiki_url, timeout=5).text, "html.parser")
-                wiki_text = " ".join(p.text for p in soup.select("p")[:3])
-                logger.debug(f"Fetched Wikipedia data for {ing}")
-            except Exception as e:
-                logger.debug(f"Could not fetch Wikipedia data for {ing}: {e}")
-            
-            # Try to fetch OpenFoodFacts data
+            # Try to fetch OpenFoodFacts data (sequential, but fast)
             try:
                 off_url = f"https://world.openfoodfacts.org/cgi/search.pl?search_terms={ing}&json=1"
                 off_data = requests.get(off_url, timeout=5).json().get("products", [{}])[0]
