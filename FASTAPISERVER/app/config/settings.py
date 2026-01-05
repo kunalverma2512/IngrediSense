@@ -36,7 +36,14 @@ class Settings(BaseSettings):
     # File Upload Configuration
     upload_dir: str = "uploads"
     max_file_size: int = 10 * 1024 * 1024  # 10MB
-    allowed_extensions: set = {".jpg", ".jpeg", ".png", ".webp"}
+    allowed_extensions_str: str = "jpg,jpeg,png,webp"
+    
+    @property
+    def allowed_extensions(self) -> set:
+        """Parse allowed extensions string into set"""
+        # Add dots to extensions if not present
+        extensions = [ext.strip() for ext in self.allowed_extensions_str.split(",")]
+        return {f".{ext}" if not ext.startswith(".") else ext for ext in extensions}
     
     # Logging Configuration
     log_level: str = "INFO"
