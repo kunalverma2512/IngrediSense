@@ -2,7 +2,10 @@ import axios from 'axios';
 import { getHealthProfile } from './profile.service';
 
 // FastAPI base URL from environment variable
-const FASTAPI_BASE_URL = import.meta.env.VITE_FASTAPI_BASE_URL || 'http://localhost:8000';
+// SANITIZATION: Remove trailing slash and /api/v1 suffix to prevent double-pathing issues
+let FASTAPI_BASE_URL = import.meta.env.VITE_FASTAPI_BASE_URL || 'http://localhost:8000';
+FASTAPI_BASE_URL = FASTAPI_BASE_URL.replace(/\/+$/, ''); // Remove trailing slashes
+FASTAPI_BASE_URL = FASTAPI_BASE_URL.replace(/\/api\/v1$/, ''); // Remove /api/v1 if already present
 
 /**
  * Convert base64 string to File object
