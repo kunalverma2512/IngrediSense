@@ -94,7 +94,7 @@ export const analyzeFoodLabel = async (base64Image, signal = null) => {
 
         // 4. Send to FastAPI with optional abort signal
         const response = await axios.post(
-            `${FASTAPI_BASE_URL}/analyze`,
+            `${FASTAPI_BASE_URL}/api/v1/analyze`,
             formData,
             {
                 headers: {
@@ -132,7 +132,7 @@ export const analyzeFoodLabel = async (base64Image, signal = null) => {
  */
 export const checkHealthServiceStatus = async () => {
     try {
-        const response = await axios.get(`${FASTAPI_BASE_URL}/health`, {
+        const response = await axios.get(`${FASTAPI_BASE_URL}/api/v1/health`, {
             timeout: 5000,
         });
         return response.data.status === 'healthy';
