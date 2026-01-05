@@ -25,12 +25,13 @@ class Settings(BaseSettings):
     # Groq Configuration (for Llama 3.2-11B Vision - FREE!)
     groq_api_key: str
     
-    # CORS Configuration
-    cors_origins: list = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:5174",
-    ]
+    # CORS Configuration  
+    cors_origins_str: str = "http://localhost:3000,http://localhost:5173,http://localhost:5174"
+    
+    @property
+    def cors_origins(self) -> list:
+        """Parse CORS origins string into list"""
+        return [origin.strip() for origin in self.cors_origins_str.split(",")]
     
     # File Upload Configuration
     upload_dir: str = "uploads"
