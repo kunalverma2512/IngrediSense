@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     groq_api_key: str
     
     # CORS Configuration  
-    cors_origins_str: str = "http://localhost:3000,http://localhost:5173,http://localhost:5174"
+    cors_origins_str: str = "http://localhost:3000,http://localhost:5173,http://localhost:5174,https://ingredisense-psi.vercel.app,https://ingredisense-1.onrender.com"
     
     @property
     def cors_origins(self) -> list:
