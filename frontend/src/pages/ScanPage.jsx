@@ -512,15 +512,62 @@ const ScanPage = () => {
                                 </p>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-gray-50 rounded-3xl p-8 text-left hover:bg-gray-100 transition-colors cursor-pointer group">
-                                        <h3 className="text-2xl font-bold text-gray-900 mb-4 group-hover:text-emerald-700 transition-colors">Ask a Follow-Up</h3>
-                                        <p className="text-gray-600 mb-8 text-lg">
-                                            "Why is sugar 2nd on the list bad?"<br />
-                                            "What's a better alternative?"
-                                        </p>
-                                        <button className="px-6 py-3 bg-white border-2 border-gray-200 text-gray-900 font-bold rounded-xl hover:border-emerald-500 hover:text-emerald-600 transition-all w-full">
-                                            Continue Conversation
-                                        </button>
+                                    {/* Ask a Follow-Up - Coming Soon */}
+                                    <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl p-8 text-left border-2 border-gray-300 transition-all cursor-not-allowed group overflow-hidden">
+                                        {/* Diagonal Stripe Pattern Overlay */}
+                                        <div className="absolute inset-0 opacity-5 pointer-events-none" style={{
+                                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,.05) 10px, rgba(0,0,0,.05) 20px)'
+                                        }}></div>
+
+                                        {/* Modern Coming Soon Badge */}
+                                        <div className="absolute top-4 right-4 z-20">
+                                            <div className="relative">
+                                                <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full blur-md opacity-50"></div>
+                                                <div className="relative bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
+                                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                                    </svg>
+                                                    Coming Soon
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Sleek Overlay on Hover */}
+                                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/95 via-purple-600/95 to-pink-600/95 backdrop-blur-md rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center z-10">
+                                            <div className="text-center px-8">
+                                                <div className="mb-4 inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full backdrop-blur-sm animate-pulse">
+                                                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                                    </svg>
+                                                </div>
+                                                <p className="text-white text-2xl font-black mb-3">Feature In Development</p>
+                                                <p className="text-white/90 text-base font-medium">We're working on bringing you conversational AI follow-ups</p>
+                                                <div className="mt-4 inline-flex items-center gap-2 text-white/70 text-sm">
+                                                    <div className="flex gap-1">
+                                                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                                                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                                                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Content with subtle styling */}
+                                        <div className="relative z-0 opacity-50 select-none">
+                                            <h3 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                                Ask a Follow-Up
+                                                <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                                </svg>
+                                            </h3>
+                                            <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+                                                "Why is sugar 2nd on the list bad?"<br />
+                                                "What's a better alternative?"
+                                            </p>
+                                            <button disabled className="px-6 py-3 bg-gray-200 border-2 border-gray-300 text-gray-500 font-bold rounded-xl w-full cursor-not-allowed relative overflow-hidden">
+                                                <span className="relative z-10">Continue Conversation</span>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="bg-emerald-50 rounded-3xl p-8 text-left hover:bg-emerald-100 transition-colors cursor-pointer group">

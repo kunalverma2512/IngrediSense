@@ -69,6 +69,19 @@ class AgentNodes:
         res = self.llm.invoke(prompt)
         return {"clinical_risk_analysis": res.content}
 
+    def _has_nutrition_data(self, nutrition: dict) -> bool:
+        """Dynamically check if ANY nutrition value was successfully extracted"""
+        if not nutrition:
+            return False
+        # Check if any numeric value is non-zero/non-null
+        for key, value in nutrition.items():
+            if value is not None and value != 0 and value != "not listed" and value != "Unknown":
+                if isinstance(value, (int, float)) and value > 0:
+                    return True
+                elif isinstance(value, str) and value.strip():
+                    return True
+        return False
+
     def conversational_designer_node(self, state: HealthCoPilotState):
         # Extract key info for enriched, contextual response
         brand = state['brand_name']
@@ -79,11 +92,13 @@ class AgentNodes:
         ingredient_kb = state['ingredient_knowledge_base']  # All ingredient analysis
         nutrition = state.get('nutrition_facts')  # CRITICAL: Actual nutrition data from OCR
         
-        # Format nutrition data for prompt
-        nutrition_info = "NOT AVAILABLE ON LABEL"
-        if nutrition:
-            nutrition_info = f"""AVAILABLE (use these EXACT values):
-- Serving Size: {nutrition.get('serving_size', 'Unknown')}
+        # DYNAMIC VALIDATION: Check if nutrition data was actually extracted
+        has_real_nutrition = self._has_nutrition_data(nutrition)
+        
+        # Format nutrition data with validation status
+        if has_real_nutrition:
+            nutrition_info = f"""**EXTRACTED FROM LABEL - USE THESE EXACT VALUES:**
+- Serving Size: {nutrition.get('serving_size', 'per serving')}
 - Calories/Energy: {nutrition.get('calories', 0)} kcal per serving
 - Total Fat: {nutrition.get('total_fat_g', 0)}g
 - Saturated Fat: {nutrition.get('saturated_fat_g', 0)}g  
@@ -93,7 +108,15 @@ class AgentNodes:
 - Sugars: {nutrition.get('sugars_g', 0)}g
 - Protein: {nutrition.get('protein_g', 0)}g
 - Potassium: {nutrition.get('potassium_mg', 'not listed')}mg
-- Iron: {nutrition.get('iron_mg', 'not listed')}mg"""
+- Iron: {nutrition.get('iron_mg', 'not listed')}mg
+
+⚠️ IMPORTANT: These values were extracted from the label. YOU MUST USE THEM."""
+        else:
+            nutrition_info = """**COULD NOT EXTRACT FROM LABEL**
+The OCR system could not read nutrition facts from this image.
+- Be honest about this limitation in your response
+- Do NOT estimate or guess nutrition values
+- If discussing nutrition, say "The label's nutrition facts weren't readable in the image\""""
         
         # Detect if product is a natural whole food
         natural_food_keywords = ['date', 'dates', 'fruit', 'fruits', 'nuts', 'almonds', 'cashews', 
@@ -138,6 +161,31 @@ Available Alternatives: {alts}
 ✅ ONLY mention confirmed ingredients from the label
 ✅ Put uncertain connections in "What I'm Unsure About" section
 ✅ If making claims, qualify: "Some studies suggest..." or "In certain cases..."
+
+**CRITICAL: DATA INTEGRITY - NO HALLUCINATION**
+1. If NUTRITION FACTS above shows "EXTRACTED FROM LABEL" → USE THOSE EXACT VALUES
+2. NEVER estimate or guess when actual data exists
+3. If data shows "80 kcal per 25g" → say exactly that, NOT "around 140 calories"
+4. If truly no data → be honest: "The label's nutrition facts weren't readable"
+5. Don't mix actual data with estimates in the same response
+
+**CONDITION-AWARE NUTRITION ANALYSIS (AI-DRIVEN):**
+When analyzing nutrition for the user's health conditions:
+1. IDENTIFY which nutrients are most relevant to their specific conditions based on your medical knowledge
+2. If user has recovery/chronic conditions → highlight protein, iron, calories in your analysis
+3. If user has metabolic conditions → focus on sugars, carbs, sodium
+4. If user has cardiovascular concerns → emphasize fats, sodium, cholesterol
+5. EXPLAIN why specific nutrients matter for THEIR condition in plain language
+6. Example: If user recovering from illness and label shows Iron → mention "This provides iron which supports energy during recovery"
+
+**SMART ALLERGY-SAFE ALTERNATIVES (AI-DRIVEN):**
+When suggesting alternatives:
+1. Analyze user's health profile for any allergy/sensitivity indicators
+2. If user has allergies/sensitivities → AVOID recommending common allergens as "safer"
+3. Consider common allergens: tree nuts, peanuts, dairy, gluten, soy, shellfish, eggs
+4. If user has respiratory/sinus issues → prefer low-histamine options, avoid common allergens
+5. NEVER recommend a higher-allergen food as "safer" than a low-allergen food
+6. If current product is already low-allergen (fruits, dates) → say "This is already a good choice"
 
 **CRITICAL: QUICK DECISION MUST REFLECT ACTUAL ANALYSIS**
 - If the product is generally safe (like natural fruits, dates, nuts) → Say "Safe to eat" or "OK to enjoy"
