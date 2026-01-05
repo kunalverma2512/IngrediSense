@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { getHealthProfile } from './profile.service';
 
-// FastAPI base URL
-const FASTAPI_BASE_URL = 'http://localhost:8000';
+// FastAPI base URL from environment variable
+const FASTAPI_BASE_URL = import.meta.env.VITE_FASTAPI_BASE_URL || 'http://localhost:8000';
 
 /**
  * Convert base64 string to File object
