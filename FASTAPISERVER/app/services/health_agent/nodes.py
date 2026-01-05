@@ -153,6 +153,7 @@ You MUST include these 6 sections with EXACT header names:
 4. **Tradeoffs:** [content]
 5. **What I'm Unsure About:**
 6. **Better Options:**
+7. **COLOR_CODE:** [REQUIRED hex color]
 
 DO NOT use variations like "Carbohydrates and Fiber Labeling" or "Ground Spices Blend" as top-level headers!
 These should be INSIDE the "What I'm Unsure About:" section.
@@ -166,6 +167,15 @@ MANDATORY OUTPUT STRUCTURE:
 - "OK in moderation. [Brief reason]" → for products with some concerns but still acceptable
 - "Not ideal, consider alternatives. [Reason]" → for processed foods with multiple concerns
 - "Skip this one. [Critical reason]" → ONLY for products with major health risks relevant to user's conditions]
+
+**COLOR_CODE:** [Generate a single hex color code based on Quick Decision INTENSITY:
+- Use green spectrum (#22C55E to #16A34A) for SAFE products
+- Use light green (#84CC16) for MOSTLY SAFE with minor notes
+- Use yellow spectrum (#EAB308 to #F59E0B) for MODERATE caution
+- Use orange (#F97316) for SIGNIFICANT concerns
+- Use red spectrum (#EF4444 to #DC2626) for SKIP/AVOID
+Choose the EXACT shade based on HOW STRONGLY you feel about the recommendation. Example: #22C55E]
+
 
 **Why This Matters To You:**
 - **[Condition 1]**: [QUANTIFY with exact % of daily needs. Use ACTUAL nutrition data if available. Example: "This 264-calorie serving (per 50g) is 13% of your ~2000 daily needs" - NOT "Let's estimate 264 calories"]
@@ -261,4 +271,41 @@ REMINDER: You MUST include ALL 6 sections with these EXACT headers:
         logger.info(f"  Has 'Better Options': {'Better Options' in response_text}")
         logger.info("="*80)
         
-        return {"final_conversational_insight": response_text}
+        # Extract COLOR_CODE from Gemini response
+        decision_color = self._extract_color_code(response_text)
+        logger.info(f"Decision color from Gemini: {decision_color}")
+        
+        return {"final_conversational_insight": response_text, "decision_color": decision_color}
+    
+    def _extract_color_code(self, response_text: str) -> str:
+        """Extract the COLOR_CODE hex value from Gemini's response"""
+        import re
+        
+        # Look for COLOR_CODE section with hex color
+        # Matches patterns like: **COLOR_CODE:** #22C55E or COLOR_CODE: #EF4444
+        patterns = [
+            r'\*\*COLOR_CODE:\*\*\s*([#][0-9A-Fa-f]{6})',  # **COLOR_CODE:** #XXXXXX
+            r'COLOR_CODE:\s*([#][0-9A-Fa-f]{6})',  # COLOR_CODE: #XXXXXX
+            r'\*\*COLOR_CODE:\*\*\s*`([#][0-9A-Fa-f]{6})`',  # **COLOR_CODE:** `#XXXXXX`
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, response_text, re.IGNORECASE)
+            if match:
+                color = match.group(1)
+                logger.info(f"Extracted color from Gemini: {color}")
+                return color
+        
+        # Fallback: If Gemini didn't provide color, guess based on keywords
+        logger.warning("No COLOR_CODE found in response, using fallback detection")
+        response_lower = response_text.lower()
+        
+        if any(kw in response_lower for kw in ['skip', 'avoid', 'dangerous', 'harmful']):
+            return "#EF4444"  # Red
+        elif any(kw in response_lower for kw in ['not ideal', 'moderation', 'limit', 'caution']):
+            return "#EAB308"  # Yellow
+        elif any(kw in response_lower for kw in ['generally safe', 'safe to eat', 'healthy choice', 'nutritious']):
+            return "#22C55E"  # Green
+        
+        return "#EAB308"  # Default yellow
+

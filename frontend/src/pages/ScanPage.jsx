@@ -489,7 +489,7 @@ const ScanPage = () => {
                         </motion.div>
 
                         {/* Parse and display the conversational insight with proper formatting */}
-                        <HealthAnalysisDisplay insight={analysisResults.final_conversational_insight} />
+                        <HealthAnalysisDisplay insight={analysisResults.final_conversational_insight} decisionColor={analysisResults.decision_color} />
                     </div>
                 </section>
             )}

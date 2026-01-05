@@ -11,3 +11,5 @@ class HealthCoPilotState(TypedDict):
     clinical_risk_analysis: str
     product_alternatives: List[str]
     final_conversational_insight: str
+    decision_color: Optional[str]  # Hex color for Quick Decision (green/yellow/red)
+

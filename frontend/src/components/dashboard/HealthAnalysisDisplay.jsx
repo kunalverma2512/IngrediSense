@@ -1,7 +1,59 @@
 import { motion } from 'framer-motion';
-import { FiThumbsDown, FiAlertTriangle, FiHelpCircle, FiShoppingBag, FiActivity } from 'react-icons/fi';
+import { FiThumbsDown, FiThumbsUp, FiAlertTriangle, FiHelpCircle, FiShoppingBag, FiActivity } from 'react-icons/fi';
 
-const HealthAnalysisDisplay = ({ insight }) => {
+const HealthAnalysisDisplay = ({ insight, decisionColor }) => {
+    // Convert hex to RGB for lighter background
+    const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : { r: 234, g: 179, b: 8 }; // Default yellow
+    };
+
+    // Get dynamic styles based on Gemini's hex color
+    const getDecisionStyles = () => {
+        const color = decisionColor || '#EAB308';
+        const rgb = hexToRgb(color);
+
+        // Calculate lightened background (20% opacity)
+        const bgColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`;
+        const borderColor = color;
+        const iconBgColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`;
+
+        // Determine icon based on color hue
+        // Green hues (60-180): thumbs up, Yellow (30-60): warning, Red (0-30, 330-360): thumbs down
+        const hue = rgbToHue(rgb.r, rgb.g, rgb.b);
+        let Icon = FiAlertTriangle; // Default
+
+        if (hue >= 80 && hue <= 160) {
+            Icon = FiThumbsUp; // Green spectrum
+        } else if (hue >= 0 && hue <= 40 || hue >= 340) {
+            Icon = FiThumbsDown; // Red spectrum
+        }
+
+        return { bgColor, borderColor, iconBgColor, iconColor: color, Icon };
+    };
+
+    // Convert RGB to Hue (0-360)
+    const rgbToHue = (r, g, b) => {
+        r /= 255; g /= 255; b /= 255;
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h = 0;
+        if (max !== min) {
+            const d = max - min;
+            switch (max) {
+                case r: h = ((g - b) / d + (g < b ? 6 : 0)); break;
+                case g: h = ((b - r) / d + 2); break;
+                case b: h = ((r - g) / d + 4); break;
+            }
+            h *= 60;
+        }
+        return h;
+    };
+
+    const decisionStyles = getDecisionStyles();
     // Parse the insight text into structured sections
     const parseInsight = (text) => {
         const sections = {
@@ -149,11 +201,20 @@ const HealthAnalysisDisplay = ({ insight }) => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-white rounded-3xl p-8 shadow-xl border-2 border-red-200"
+                    className="rounded-3xl p-8 shadow-xl"
+                    style={{
+                        backgroundColor: decisionStyles.bgColor,
+                        borderWidth: '2px',
+                        borderStyle: 'solid',
+                        borderColor: decisionStyles.borderColor
+                    }}
                 >
                     <div className="flex items-start gap-4">
-                        <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                            <FiThumbsDown className="text-red-600 text-2xl" />
+                        <div
+                            className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: decisionStyles.iconBgColor }}
+                        >
+                            <decisionStyles.Icon className="text-2xl" style={{ color: decisionStyles.iconColor }} />
                         </div>
                         <div className="flex-1">
                             <h3 className="text-2xl font-black text-gray-900 mb-3">Quick Decision</h3>

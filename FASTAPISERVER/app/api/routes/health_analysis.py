@@ -105,7 +105,8 @@ async def analyze_food_label(
             ingredient_knowledge_base=ingredient_profiles,
             clinical_risk_analysis=result.get("clinical_risk_analysis", ""),
             product_alternatives=result.get("product_alternatives", []),
-            final_conversational_insight=result.get("final_conversational_insight", "")
+            final_conversational_insight=result.get("final_conversational_insight", ""),
+            decision_color=result.get("decision_color", "#EAB308")  # Default yellow
         )
         
         return response

@@ -31,6 +31,10 @@ class HealthAnalysisResponse(BaseModel):
         ..., 
         description="Conversational summary with recommendations"
     )
+    decision_color: Optional[str] = Field(
+        None,
+        description="Hex color for Quick Decision section (green=#22C55E, yellow=#EAB308, red=#EF4444)"
+    )
     
     class Config:
         json_schema_extra = {
