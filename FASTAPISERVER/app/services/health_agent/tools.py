@@ -84,12 +84,19 @@ class ProHealthTools:
                         "content": [
                             {
                                 "type": "text",
-                                "text": """Look at this food label image carefully and extract ALL information:
+                                "text": """Look at this food label image CAREFULLY - scan ALL parts of the package including:
+- Left side
+- Right side  
+- Back panel
+- ANY nutrition table or nutritional information panel
+
+Extract ALL information you can see:
 
 1. Product name and brand
-2. **ALL nutrition facts from the Nutrition Facts table** (per serving):
-   - Serving size (e.g., "50g", "1 cup")
-   - Calories
+
+2. **ALL nutrition facts from ANY Nutrition table** (look for "Nutritional Information", "Nutrition Facts", or similar):
+   - Serving size (e.g., "50g", "25g", "1 cup", "3 pieces")
+   - Energy/Calories (kcal or kJ - convert kJ to kcal by dividing by 4.184)
    - Total Fat (g)
    - Saturated Fat (g)
    - Sodium (mg)
@@ -97,29 +104,41 @@ class ProHealthTools:
    - Dietary Fiber (g)
    - Sugars (g)
    - Protein (g)
+   - Potassium (mg) if listed
+   - Iron (mg) if listed
+   - Any other vitamins/minerals listed
+
 3. Complete ingredients list (in order)
+
+IMPORTANT - SCAN THE ENTIRE IMAGE:
+- Check RIGHT side of package for nutrition table
+- Check ALL columns in the nutrition table
+- Indian labels often have nutrition info on the side panel
 
 Return as JSON in this EXACT format:
 {
   "brand": "Product Brand Name",
   "ingredients": ["ingredient1", "ingredient2", ...],
   "nutrition": {
-    "serving_size": "50g",
-    "calories": 264,
-    "total_fat_g": 16.0,
-    "saturated_fat_g": 5.0,
-    "sodium_mg": 192,
-    "carbohydrates_g": 25.0,
-    "fiber_g": 1.0,
-    "sugars_g": 8.0,
-    "protein_g": 5.0
+    "serving_size": "25g",
+    "calories": 80,
+    "total_fat_g": 0.5,
+    "saturated_fat_g": 0.1,
+    "sodium_mg": 10,
+    "carbohydrates_g": 19.4,
+    "fiber_g": 1.8,
+    "sugars_g": 17.4,
+    "protein_g": 0.8,
+    "potassium_mg": 168.6,
+    "iron_mg": 0.5
   }
 }
 
-IMPORTANT:
-- If you can SEE the nutrition table, extract ALL values
-- Only use null/0 if data is truly missing from the image
-- Extract actual numbers from the table, don't estimate"""
+CRITICAL:
+- If you can SEE the nutrition table anywhere on the image, extract ALL values
+- Only use null/0 if data is truly NOT visible anywhere on the label
+- Extract actual numbers from the table, don't estimate
+- Look carefully at ALL parts of the package image"""
                             },
                             {
                                 "type": "image_url",

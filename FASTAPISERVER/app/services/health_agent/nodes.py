@@ -84,14 +84,33 @@ class AgentNodes:
         if nutrition:
             nutrition_info = f"""AVAILABLE (use these EXACT values):
 - Serving Size: {nutrition.get('serving_size', 'Unknown')}
-- Calories: {nutrition.get('calories', 0)} per serving
+- Calories/Energy: {nutrition.get('calories', 0)} kcal per serving
 - Total Fat: {nutrition.get('total_fat_g', 0)}g
 - Saturated Fat: {nutrition.get('saturated_fat_g', 0)}g  
 - Sodium: {nutrition.get('sodium_mg', 0)}mg
 - Carbohydrates: {nutrition.get('carbohydrates_g', 0)}g
 - Fiber: {nutrition.get('fiber_g', 0)}g
 - Sugars: {nutrition.get('sugars_g', 0)}g
-- Protein: {nutrition.get('protein_g', 0)}g"""
+- Protein: {nutrition.get('protein_g', 0)}g
+- Potassium: {nutrition.get('potassium_mg', 'not listed')}mg
+- Iron: {nutrition.get('iron_mg', 'not listed')}mg"""
+        
+        # Detect if product is a natural whole food
+        natural_food_keywords = ['date', 'dates', 'fruit', 'fruits', 'nuts', 'almonds', 'cashews', 
+                                  'raisins', 'dried', 'fresh', 'honey', 'jaggery', 'makhana', 'foxnuts']
+        is_natural_food = any(keyword in brand.lower() or keyword in ' '.join(ingredients).lower() 
+                              for keyword in natural_food_keywords)
+        
+        product_type_hint = ""
+        if is_natural_food:
+            product_type_hint = """
+**PRODUCT TYPE: NATURAL WHOLE FOOD**
+This appears to be a natural, minimally processed food (like dates, fruits, nuts). 
+- Such foods are generally SAFE and BENEFICIAL for most people
+- Quick Decision should reflect this: "Generally safe!" or "OK to enjoy"
+- Only say "Skip" if user has a SPECIFIC known allergy to this exact food
+- For Better Options: Say "This is already a healthy choice!" and suggest complementary foods, NOT processed alternatives like chips
+"""
         
         prompt = f"""**STRICT OUTPUT FORMAT – NO EXCEPTIONS:**
 You MUST include ALL 6 components below. Competition judging focuses on co-pilot behavior and HONEST UNCERTAINTY.
@@ -106,6 +125,7 @@ User Health Profile: {profile}
 Risk Analysis: {risks[:500]}
 Ingredient Details: {ingredient_kb}
 Available Alternatives: {alts}
+{product_type_hint}
 
 **ANTI-JARGON RULES (CRITICAL):**
 ❌ NEVER use: "mast cell degranulation", "Mycobacterium tuberculosis", "3-MCPD esters", "cytokine release", "histamine pathways"
@@ -118,6 +138,12 @@ Available Alternatives: {alts}
 ✅ ONLY mention confirmed ingredients from the label
 ✅ Put uncertain connections in "What I'm Unsure About" section
 ✅ If making claims, qualify: "Some studies suggest..." or "In certain cases..."
+
+**CRITICAL: QUICK DECISION MUST REFLECT ACTUAL ANALYSIS**
+- If the product is generally safe (like natural fruits, dates, nuts) → Say "Safe to eat" or "OK to enjoy"
+- If it has minor concerns but is still acceptable → Say "OK in moderation" 
+- ONLY say "Skip" if there are MAJOR health risks (high sodium + heart issues, allergen present + known allergy)
+- Don't be overly cautious! Natural whole foods are usually fine.
 
 **CRITICAL: USE THESE EXACT SECTION HEADERS - NO VARIATIONS!**
 You MUST include these 6 sections with EXACT header names:
@@ -135,14 +161,18 @@ MANDATORY OUTPUT STRUCTURE:
 
 🤔 Scanning your {{brand}}...
 
-**Quick Decision:** [One clear sentence: Safe/Not ideal/Skip + specific action in plain English]
+**Quick Decision:** [Based on ACTUAL analysis:
+- "Generally safe! [Benefit]" → for whole foods, natural products with no major concerns
+- "OK in moderation. [Brief reason]" → for products with some concerns but still acceptable
+- "Not ideal, consider alternatives. [Reason]" → for processed foods with multiple concerns
+- "Skip this one. [Critical reason]" → ONLY for products with major health risks relevant to user's conditions]
 
 **Why This Matters To You:**
 - **[Condition 1]**: [QUANTIFY with exact % of daily needs. Use ACTUAL nutrition data if available. Example: "This 264-calorie serving (per 50g) is 13% of your ~2000 daily needs" - NOT "Let's estimate 264 calories"]
 - **[Condition 2]**: [Explain WHAT ingredient IS in simple terms + regulatory fact. Example: "White sesame (FDA-required allergen label since 2023) can trigger severe allergic reactions"]
 - **[Condition 3]**: [Use SIMPLE mechanism. Example: "Refined flour spikes blood sugar, which can worsen inflammation" NOT "histamine pathways"]
 
-**Tradeoffs:** [One sentence: benefit vs risk + age context in plain language. Example: "Tasty quick snack, but high saturated fat could be better spent on whole foods for your TB recovery"]
+**Tradeoffs:** [One sentence: benefit vs risk + age context in plain language. Example: "A healthy, nutrient-dense snack that supports your energy needs, just wash thoroughly as the label instructs."]
 
 **What I'm Unsure About:**
 List 2-3 specific uncertainties with honest explanations:
@@ -150,9 +180,8 @@ List 2-3 specific uncertainties with honest explanations:
 - **[Processing Details]**: [Unspecified processing methods + impact. Example: "Palm Oil Processing: Label doesn't specify refined vs unrefined, making it hard to quantify exact byproduct levels"]
 - **[Conflicting Evidence]**: [If research is mixed. Example: "Research is mixed on whether X affects Y in people under 25"]
 
-**Better Options:** 🛒 [SPECIFIC product brands with store names]
-- [Brand Name] (Why it's better: specific reason, available at: Target/Whole Foods)
-- [Brand Name] (Why it's better: specific reason, available at: Target/Whole Foods)
+**Better Options:** 🛒 [SPECIFIC product brands with store names - ONLY if current product has significant issues, otherwise say "This is already a good choice!" or suggest complementary items]
+- [Brand Name] (Why it's better: specific reason, available at: BigBasket/Amazon India)
 
 CRITICAL REQUIREMENTS:
 

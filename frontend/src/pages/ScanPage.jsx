@@ -22,12 +22,26 @@ const ScanPage = () => {
 
     const webcamRef = useRef(null);
 
-    // Persist uploaded image to localStorage
+    // Persist uploaded image and analysis results to localStorage
     useEffect(() => {
         // Restore from localStorage on mount
         const savedImage = localStorage.getItem('scanPage_uploadedImage');
         if (savedImage) {
             setUploadedImage(savedImage);
+        }
+
+        // Restore analysis results from localStorage on mount
+        const savedResults = localStorage.getItem('scanPage_analysisResults');
+        const savedShowResults = localStorage.getItem('scanPage_showResults');
+        if (savedResults) {
+            try {
+                setAnalysisResults(JSON.parse(savedResults));
+                setShowResults(savedShowResults === 'true');
+            } catch (error) {
+                console.warn('Failed to parse saved analysis results');
+                localStorage.removeItem('scanPage_analysisResults');
+                localStorage.removeItem('scanPage_showResults');
+            }
         }
 
         // Cleanup: save to localStorage on unmount
@@ -154,6 +168,13 @@ const ScanPage = () => {
             const results = await analyzeFoodLabel(uploadedImage, abortControllerRef.current.signal);
             setAnalysisResults(results);
             setShowResults(true);
+            // Persist results to localStorage
+            try {
+                localStorage.setItem('scanPage_analysisResults', JSON.stringify(results));
+                localStorage.setItem('scanPage_showResults', 'true');
+            } catch (storageError) {
+                console.warn('Failed to save analysis results to localStorage:', storageError);
+            }
         } catch (error) {
             console.error('Analysis failed:', error);
             // Ignore abort errors (user navigated away or cancelled)
@@ -512,6 +533,11 @@ const ScanPage = () => {
                                                 setUploadedImage(null);
                                                 setUserIntent('');
                                                 setShowResults(false);
+                                                setAnalysisResults(null);
+                                                // Clear all localStorage data for scan page
+                                                localStorage.removeItem('scanPage_uploadedImage');
+                                                localStorage.removeItem('scanPage_analysisResults');
+                                                localStorage.removeItem('scanPage_showResults');
                                                 // Smooth scroll to upload section
                                                 document.getElementById('upload-section').scrollIntoView({ behavior: 'smooth' });
                                             }}
