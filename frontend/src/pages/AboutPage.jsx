@@ -1,152 +1,102 @@
 import { motion } from 'framer-motion';
-import { FiCpu, FiUsers, FiTarget, FiZap, FiCode, FiAward } from 'react-icons/fi';
+import { useEffect } from 'react';
 
 const AboutPage = () => {
+    // Scroll to top on mount
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     return (
-        <div className="min-h-screen bg-white pt-20">
-            {/* Section 1: Introduction */}
-            <section className="py-20">
-                <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="min-h-screen bg-white">
+            {/* Section 1: Hero & Introduction */}
+            <section className="min-h-screen flex items-center pt-20 pb-16 bg-gradient-to-br from-gray-50 to-white">
+                <div className="max-w-4xl mx-auto px-6">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-center max-w-3xl mx-auto mb-20"
+                        transition={{ duration: 0.8 }}
                     >
-                        <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full font-semibold mb-6">
-                            <FiAward /> ENCODE 2026 Project
-                        </div>
-                        <h1 className="text-5xl md:text-7xl font-black text-gray-900 mb-8 leading-tight">
+                        <p className="text-emerald-600 font-semibold text-sm uppercase tracking-widest mb-6">
+                            About IngrediSense
+                        </p>
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-gray-900 mb-8 leading-tight">
                             A Health Co-Pilot,<br />
-                            <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                                Not Just a Database.
-                            </span>
+                            <span className="text-emerald-600">Not Just a Database.</span>
                         </h1>
-                        <p className="text-2xl text-gray-600 leading-relaxed">
-                            We built IngrediSense for the ENCODE 2026 Hackathon at IIT Guwahati. Our goal? To move beyond static food labels and build an AI that understands <i>your</i> context.
+                        <p className="text-lg sm:text-xl md:text-2xl text-gray-600 leading-relaxed">
+                            IngrediSense was built for the ENCODE 2026 Hackathon at IIT Guwahati with a simple belief:
+                            food labels shouldn't require a chemistry degree to understand. Most nutrition apps dump data on you—calories,
+                            percentages, ingredient lists—and leave you to figure it out. We took a different approach. Instead of
+                            starting with the product, we start with you. Tell us your goal, your conditions, your concerns, and we'll
+                            filter everything through that lens. We don't give you a "health score" or a green/red label. We give you
+                            context. We explain tradeoffs. We admit when science is uncertain. Because making good food choices isn't
+                            about following rules—it's about understanding what you're actually eating.
                         </p>
                     </motion.div>
-
-                    {/* Mission Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-32">
-                        {[
-                            {
-                                icon: FiTarget,
-                                title: "Intent-First",
-                                desc: "Most apps just dump data. We start with your goal ('I'm diabetic', 'building muscle') and filter everything through that lens."
-                            },
-                            {
-                                icon: FiCpu,
-                                title: "Thinking AI",
-                                desc: "We don't just match keywords. We use LLMs to reason about ingredients, additives, and their combined effects on your specific physiology."
-                            },
-                            {
-                                icon: FiZap,
-                                title: "Zero Fluff",
-                                desc: "No corporate jargon. No hidden agendas. Just honest analysis of what's in your food, including the uncertain stuff."
-                            }
-                        ].map((item, idx) => (
-                            <motion.div
-                                key={idx}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: idx * 0.1 }}
-                                className="bg-gray-50 rounded-3xl p-8 hover:bg-white hover:shadow-xl transition-all border border-gray-100"
-                            >
-                                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 text-2xl mb-6">
-                                    <item.icon />
-                                </div>
-                                <h3 className="text-2xl font-bold text-gray-900 mb-4">{item.title}</h3>
-                                <p className="text-gray-600 leading-relaxed text-lg">{item.desc}</p>
-                            </motion.div>
-                        ))}
-                    </div>
                 </div>
             </section>
 
-            {/* Section 2: The Tech (Honest) */}
-            <section className="bg-gray-900 text-white py-32 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
-                <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                        <div>
-                            <h2 className="text-4xl md:text-5xl font-black mb-8">
-                                Under the Hood
-                            </h2>
-                            <p className="text-xl text-gray-400 mb-8 leading-relaxed">
-                                This isn't a pre-baked database of products. It's a live reasoning engine.
-                            </p>
-                            <div className="space-y-6">
-                                {[
-                                    "Real-time OCR for reading labels",
-                                    "LLM-based context analysis",
-                                    "Dynamic risk/benefit weighting",
-                                    "Honest uncertainty flagging"
-                                ].map((feature, idx) => (
-                                    <div key={idx} className="flex items-center gap-4">
-                                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-                                            <FiCode />
-                                        </div>
-                                        <span className="text-lg font-medium">{feature}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="bg-gray-800 rounded-3xl p-8 border border-gray-700">
-                            <pre className="font-mono text-sm text-emerald-400 overflow-x-auto">
-                                {`// Our Core Philosophy
-const analyzeFood = (ingredients, userContext) => {
-  
-  // 1. Understand the goal
-  const goal = parseIntent(userContext);
-  
-  // 2. Analyze tradeoffs
-  const risks = findRisks(ingredients, goal);
-  const benefits = findBenefits(ingredients, goal);
-  
-  // 3. Honest Conclusion
-  return {
-    verdict: calculateVerdict(risks, benefits),
-    uncertainty: flagMissingData(),
-    advice: generateHumanAdvice()
-  };
-}`}
-                            </pre>
-                        </div>
-                    </div>
+            {/* Section 2: Our Philosophy */}
+            <section className="min-h-screen flex items-center py-16 bg-gray-900 text-white">
+                <div className="max-w-4xl mx-auto px-6">
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                    >
+                        <h2 className="text-4xl sm:text-5xl md:text-6xl font-black mb-8">
+                            Our Philosophy
+                        </h2>
+                        <p className="text-lg sm:text-xl md:text-2xl text-gray-300 leading-relaxed mb-8">
+                            We believe you're smart enough to make your own decisions. You don't need an app telling you what to buy
+                            or what to avoid. What you need is clear, honest information—presented in plain language, filtered through
+                            your specific situation. That's why we built IngrediSense as a "co-pilot" rather than an "authority."
+                            A co-pilot doesn't fly the plane while the pilot sleeps. A co-pilot navigates, checks instruments,
+                            and provides information so the pilot can make informed decisions. That's us. We read the label,
+                            we cross-reference your health profile, we explain what each ingredient means for someone in your situation,
+                            and then we step back. The decision is always yours.
+                        </p>
+                        <p className="text-lg sm:text-xl md:text-2xl text-gray-300 leading-relaxed">
+                            We also believe in honesty over certainty. Nutrition science is messy. Studies contradict each other.
+                            What's "bad" today might be "fine" tomorrow. Rather than pretend we have all the answers, we tell you
+                            when the evidence is mixed or when more research is needed. That might feel less satisfying than a
+                            definitive "eat this, not that" verdict, but it's more truthful. And truth, in the long run, is more
+                            useful than false confidence.
+                        </p>
+                    </motion.div>
                 </div>
             </section>
 
-            {/* Section 3: The Team */}
-            <section className="py-32 bg-emerald-50/50">
-                <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-                    <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6">
-                        Built by Builders
-                    </h2>
-                    <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-16">
-                        We are a team of students and developers participating in ENCODE 2026, passionate about applying AI to real-world health problems.
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-                        {/* Team Placeholder 1 */}
-                        <div className="bg-white p-8 rounded-3xl shadow-lg">
-                            <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-6 flex items-center justify-center text-4xl">👨‍💻</div>
-                            <h3 className="text-xl font-bold mb-2">Frontend & UX</h3>
-                            <p className="text-emerald-600 font-medium">React & AI Integration</p>
-                        </div>
-                        {/* Team Placeholder 2 */}
-                        <div className="bg-white p-8 rounded-3xl shadow-lg">
-                            <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-6 flex items-center justify-center text-4xl">🚀</div>
-                            <h3 className="text-xl font-bold mb-2">Backend & Logic</h3>
-                            <p className="text-emerald-600 font-medium">Node.js & LLM Ops</p>
-                        </div>
-                        {/* Team Placeholder 3 */}
-                        <div className="bg-white p-8 rounded-3xl shadow-lg">
-                            <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-6 flex items-center justify-center text-4xl">🎨</div>
-                            <h3 className="text-xl font-bold mb-2">Design & Product</h3>
-                            <p className="text-emerald-600 font-medium">Strategy & Analysis</p>
-                        </div>
-                    </div>
+            {/* Section 3: The Mission */}
+            <section className="min-h-screen flex items-center py-16 bg-gradient-to-br from-gray-50 to-white">
+                <div className="max-w-4xl mx-auto px-6">
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                    >
+                        <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-gray-900 mb-8">
+                            The Mission
+                        </h2>
+                        <p className="text-lg sm:text-xl md:text-2xl text-gray-600 leading-relaxed mb-8">
+                            Our mission is simple: make ingredient information accessible to everyone, regardless of their
+                            scientific background. We use advanced AI not to replace human judgment, but to augment it.
+                            When you scan a product, Llama 4 Scout Vision reads the label in milliseconds. Google Gemini
+                            analyzes each ingredient against your health profile. The result is a personalized breakdown
+                            that would take a human nutritionist hours to produce—delivered in seconds, on your phone,
+                            while you're standing in the grocery aisle.
+                        </p>
+                        <p className="text-lg sm:text-xl md:text-2xl text-gray-600 leading-relaxed">
+                            We don't sell your data. We don't push products. We don't have sponsors paying us to
+                            recommend their brands. Our only agenda is helping you understand what's in your food.
+                            Whether you're managing a chronic condition, avoiding allergens, feeding your family,
+                            or just curious about what "natural flavors" actually means—we're here to translate
+                            the label into something you can actually use.
+                        </p>
+                    </motion.div>
                 </div>
             </section>
         </div>
