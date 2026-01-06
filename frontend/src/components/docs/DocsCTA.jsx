@@ -11,7 +11,7 @@ const DocsCTA = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                 >
-                    <h2 className="text-5xl md:text-6xl font-black mb-6">
+                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6">
                         Try It Now
                     </h2>
                     <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
@@ -23,7 +23,7 @@ const DocsCTA = () => {
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="inline-flex items-center gap-3 px-10 py-5 bg-emerald-600 text-white text-lg font-bold hover:bg-emerald-700 transition-colors"
+                                className="inline-flex items-center gap-3 px-8 md:px-10 py-4 md:py-5 bg-emerald-600 text-white text-base md:text-lg font-bold hover:bg-emerald-700 transition-colors w-full sm:w-auto justify-center"
                             >
                                 Scan a Product
                                 <FiArrowRight />
@@ -33,7 +33,7 @@ const DocsCTA = () => {
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="inline-flex items-center gap-3 px-10 py-5 bg-transparent text-white text-lg font-bold border border-gray-700 hover:bg-gray-800 transition-colors"
+                                className="inline-flex items-center gap-3 px-8 md:px-10 py-4 md:py-5 bg-transparent text-white text-base md:text-lg font-bold border border-gray-700 hover:bg-gray-800 transition-colors w-full sm:w-auto justify-center"
                             >
                                 Go to Dashboard
                             </motion.button>

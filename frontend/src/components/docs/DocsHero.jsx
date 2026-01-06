@@ -34,14 +34,14 @@ const DocsHero = () => {
                         <p className="text-emerald-600 font-semibold text-sm uppercase tracking-widest mb-6">
                             Technical Documentation
                         </p>
-                        <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-gray-900 mb-8 leading-none">
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-gray-900 mb-6 leading-none">
                             How<br />It Works
                         </h1>
-                        <p className="text-xl md:text-2xl text-gray-600 leading-relaxed mb-8 max-w-lg">
+                        <p className="text-lg md:text-xl lg:text-2xl text-gray-600 leading-relaxed mb-6 max-w-lg">
                             A three-tier AI system that reads food labels using Llama Vision,
                             understands your health context, and explains what matters to you.
                         </p>
-                        <div className="flex flex-wrap gap-4">
+                        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
                             {highlights.map((item, idx) => (
                                 <motion.div
                                     key={idx}

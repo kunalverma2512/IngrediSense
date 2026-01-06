@@ -45,7 +45,7 @@ const FeaturesSection = () => {
                     viewport={{ once: true }}
                     className="text-center mb-16"
                 >
-                    <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6">
+                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 mb-6">
                         Core Features
                     </h2>
                     <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -61,7 +61,7 @@ const FeaturesSection = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: idx * 0.05 }}
-                            className="p-8 bg-white border-t border-l border-gray-200 md:[&:nth-child(-n+2)]:border-t-0 first:border-t-0 md:odd:border-l-0"
+                            className="p-6 md:p-8 bg-white border-t border-l border-gray-200 md:[&:nth-child(-n+2)]:border-t-0 first:border-t-0 md:odd:border-l-0"
                         >
                             <span className="text-5xl font-black text-gray-100">{String(idx + 1).padStart(2, '0')}</span>
                             <h3 className="text-xl font-bold text-gray-900 mb-3 -mt-4">

@@ -46,7 +46,7 @@ const TechStackSection = () => {
                     viewport={{ once: true }}
                     className="text-center mb-16"
                 >
-                    <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6">
+                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 mb-6">
                         Technology Stack
                     </h2>
                     <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -62,7 +62,7 @@ const TechStackSection = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: idx * 0.1 }}
-                            className="p-8 border-b lg:border-b-0 lg:border-r border-gray-200 last:border-r-0 last:border-b-0"
+                            className="p-6 md:p-8 border-b lg:border-b-0 lg:border-r border-gray-200 last:border-r-0 last:border-b-0"
                         >
                             <h3 className="text-2xl font-bold text-gray-900 mb-6 pb-4 border-b border-gray-200">
                                 {stack.category}
