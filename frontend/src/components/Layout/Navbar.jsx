@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiMenu, FiX, FiUser, FiLogOut, FiSettings, FiChevronDown } from 'react-icons/fi'
 import { useAuth } from '../../context/AuthContext'
@@ -8,6 +8,7 @@ import SignupModal from '../auth/SignupModal'
 
 const Navbar = ({ onOpenLogin, onOpenSignup }) => {
     const { user, isAuthenticated, logout } = useAuth()
+    const navigate = useNavigate()
     const [isScrolled, setIsScrolled] = useState(false)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [showUserMenu, setShowUserMenu] = useState(false)
@@ -40,10 +41,15 @@ const Navbar = ({ onOpenLogin, onOpenSignup }) => {
         { name: 'FAQ', path: '/faq' },
     ]
 
-    const handleLogout = () => {
-        logout()
+    const handleLogout = async () => {
         setShowUserMenu(false)
-        window.location.href = '/'
+        setIsMobileMenuOpen(false)
+
+        // Wait for logout to complete and clear auth state
+        await logout()
+
+        // Navigate using React Router (no page reload)
+        navigate('/', { replace: true })
     }
 
     return (
