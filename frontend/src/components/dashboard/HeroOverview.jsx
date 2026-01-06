@@ -19,7 +19,7 @@ const HeroOverview = () => {
     return (
         <section
             id="hero-section"
-            className="flex items-start justify-center relative pt-16 pb-20 bg-gradient-to-br from-gray-50 to-white"
+            className="flex items-start justify-center relative pt-16 pb-32 bg-gradient-to-br from-gray-50 to-white"
         >
             <div className="max-w-7xl mx-auto px-6 lg:px-12 w-full pb-12 relative z-10">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
