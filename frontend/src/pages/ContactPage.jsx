@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiMail, FiMapPin, FiPhone, FiSend, FiUser, FiMessageSquare, FiTag, FiGithub, FiLinkedin, FiTwitter } from 'react-icons/fi';
+import { FiMail, FiMapPin, FiPhone, FiSend, FiUser, FiMessageSquare, FiTag, FiGithub, FiTwitter } from 'react-icons/fi';
 
 const ContactPage = () => {
     const [formData, setFormData] = useState({
@@ -72,8 +72,7 @@ const ContactPage = () => {
                                 </div>
                                 <div>
                                     <p className="text-emerald-100 text-sm font-medium uppercase tracking-wider mb-1">Email Us</p>
-                                    <p className="text-xl font-semibold">hello@ingredisense.com</p>
-                                    <p className="text-emerald-100">support@ingredisense.com</p>
+                                    <p className="text-xl font-semibold">kunalvermah8@gmail.com</p>
                                 </div>
                             </div>
 
@@ -83,8 +82,8 @@ const ContactPage = () => {
                                 </div>
                                 <div>
                                     <p className="text-emerald-100 text-sm font-medium uppercase tracking-wider mb-1">Location</p>
-                                    <p className="text-xl font-semibold">IIT Guwahati</p>
-                                    <p className="text-emerald-100">Guwahati, Assam, India</p>
+                                    <p className="text-xl font-semibold">ENCODE 2026</p>
+                                    <p className="text-emerald-100">Hackathon Project</p>
                                 </div>
                             </div>
 
@@ -103,13 +102,10 @@ const ContactPage = () => {
                         <div className="mt-12 pt-8 border-t border-white/20">
                             <p className="font-semibold mb-6">Connect across platforms</p>
                             <div className="flex gap-4">
-                                <a href="#" className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
+                                <a href="https://github.com/kunalverma2512/IngrediSense" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
                                     <FiGithub className="text-xl" />
                                 </a>
-                                <a href="#" className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
-                                    <FiLinkedin className="text-xl" />
-                                </a>
-                                <a href="#" className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
+                                <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
                                     <FiTwitter className="text-xl" />
                                 </a>
                             </div>
@@ -205,8 +201,8 @@ const ContactPage = () => {
                                                     type="button"
                                                     onClick={() => setFormData({ ...formData, priority: p })}
                                                     className={`flex-1 py-3 rounded-xl border font-medium capitalize transition-all ${formData.priority === p
-                                                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                                                            : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                                                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
+                                                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
                                                         }`}
                                                 >
                                                     {p}

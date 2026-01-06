@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { FiGithub, FiLinkedin, FiMail, FiHeart } from 'react-icons/fi';
+import { FiGithub, FiMail, FiHeart } from 'react-icons/fi';
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
@@ -21,8 +21,7 @@ const Footer = () => {
                             Your AI shopping companion for understanding food ingredients at decision time.
                         </p>
                         <p className="text-sm text-gray-500">
-                            Built for ENCODE 2026 Hackathon<br />
-                            IIT Guwahati
+                            Built for ENCODE 2026 Hackathon
                         </p>
                     </div>
 
@@ -94,7 +93,7 @@ const Footer = () => {
                             </p>
                             <div className="flex gap-4 mt-6">
                                 <a
-                                    href="https://github.com"
+                                    href="https://github.com/kunalverma2512/IngrediSense"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-gray-400 hover:text-emerald-400 transition-colors"
@@ -103,16 +102,7 @@ const Footer = () => {
                                     <FiGithub className="text-2xl" />
                                 </a>
                                 <a
-                                    href="https://linkedin.com"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-gray-400 hover:text-teal-400 transition-colors"
-                                    aria-label="LinkedIn"
-                                >
-                                    <FiLinkedin className="text-2xl" />
-                                </a>
-                                <a
-                                    href="mailto:hello@ingredisense.com"
+                                    href="mailto:kunalvermah8@gmail.com"
                                     className="text-gray-400 hover:text-cyan-400 transition-colors"
                                     aria-label="Email"
                                 >

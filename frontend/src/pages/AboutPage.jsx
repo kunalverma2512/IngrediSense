@@ -25,7 +25,7 @@ const AboutPage = () => {
                             <span className="text-emerald-600">Not Just a Database.</span>
                         </h1>
                         <p className="text-lg sm:text-xl md:text-2xl text-gray-600 leading-relaxed">
-                            IngrediSense was built for the ENCODE 2026 Hackathon at IIT Guwahati with a simple belief:
+                            IngrediSense was built for the ENCODE 2026 Hackathon with a simple belief:
                             food labels shouldn't require a chemistry degree to understand. Most nutrition apps dump data on you—calories,
                             percentages, ingredient lists—and leave you to figure it out. We took a different approach. Instead of
                             starting with the product, we start with you. Tell us your goal, your conditions, your concerns, and we'll
