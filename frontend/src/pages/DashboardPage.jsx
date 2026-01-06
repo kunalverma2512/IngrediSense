@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import DashboardBanner from '../components/dashboard/DashboardBanner';
 import HeroOverview from '../components/dashboard/HeroOverview';
 import InterpretSection from '../components/dashboard/InterpretSection';
@@ -5,6 +6,11 @@ import HowItWorks from '../components/dashboard/HowItWorks';
 import CTASection from '../components/dashboard/CTASection';
 
 const DashboardPage = () => {
+    // Scroll to top when page loads/refreshes
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     return (
         <div className="bg-white">
             {/* Banner comes after Navbar (Navbar is in MainLayout with pt-16/pt-20) */}
